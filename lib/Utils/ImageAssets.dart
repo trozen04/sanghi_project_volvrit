@@ -1,0 +1,29 @@
+class ImageAssets {
+  static const String appLogo = "assets/images/SanghiLogo.png";
+  static const String LoginBG = "assets/images/LoginBG.png";
+  static const String liveIcon = "assets/images/liveIcon.png";
+  static const String RingImage = "assets/images/RingImage.png";
+  static const String ringImage1 = "assets/images/ringImage1.png";
+  static const String ringImage2 = "assets/images/ringImage2.png";
+  static const String ringDetails = "assets/images/ringDetails.png";
+  static const String EarringImage = "assets/images/EarringImage.png";
+  static const String cartNotSelected = "assets/images/cartNotSelected.png";
+  static const String homeNotSelected = "assets/images/homeNotSelected.png";
+  static const String categoryNotSelected = "assets/images/categoryNotSelected.png";
+  static const String profileNotSelected = "assets/images/profileNotSelected.png";
+  static const String profileSelected = "assets/images/profileSelected.png";
+  static const String categorySelected = "assets/images/categorySelected.png";
+  static const String cartSelected = "assets/images/cartSelected.png";
+  static const String homeSelected = "assets/images/home.png";
+  static const String notificationIcon = "assets/images/notificationIcon.png";
+  static const String leadingArrow = "assets/images/leadingArrow.png";
+  static const String deleteIcon = "assets/images/deleteIcon.png";
+  static const String logout = "assets/images/logout.png";
+  static const String support = "assets/images/support.png";
+  static const String passWord = "assets/images/passWord.png";
+  static const String myOrders = "assets/images/myOrders.png";
+  static const String user = "assets/images/User.png";
+  static const String editProfile = "assets/images/editProfile.png";
+  static const String checkIcon = "assets/images/checkIcon.png";
+  static const String arrowUpLinear = "assets/images/arrowUpLinear.png";
+}
