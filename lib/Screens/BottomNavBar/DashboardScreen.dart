@@ -24,7 +24,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     // Screens with access to current setState
-    final List<Widget> _screens = [
+    final List<Widget> screens = [
       HomeScreen(),
       CategoryScreen(),
       CartPage(
@@ -40,7 +40,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        body: _screens[selectedIndex], // show the selected screen
+        body: screens[selectedIndex], // show the selected screen
         bottomNavigationBar: CustomNavBar(
           height: 90,
           imageSize: 24,

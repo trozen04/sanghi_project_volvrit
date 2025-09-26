@@ -9,6 +9,8 @@ import 'package:gold_project/Widgets/AppBar/CustomAppBar.dart';
 import 'package:gold_project/Widgets/OtherReusableWidgets.dart';
 
 class DetailsPage extends StatefulWidget {
+  const DetailsPage({super.key});
+
 
   @override
   _DetailsPageState createState() => _DetailsPageState();

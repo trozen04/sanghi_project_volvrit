@@ -45,8 +45,8 @@ Future<List<String>?> showMultiSelectDialog({
                             title: Text(item, style: FFontStyles.filters(14)),
                             controlAffinity: ListTileControlAffinity.leading,
                             checkColor: AppColors.primary,
-                            fillColor: MaterialStateProperty.resolveWith((states) => AppColors.checkboxColor),
-                            side: MaterialStateBorderSide.resolveWith((states) => BorderSide.none),
+                            fillColor: WidgetStateProperty.resolveWith((states) => AppColors.checkboxColor),
+                            side: WidgetStateBorderSide.resolveWith((states) => BorderSide.none),
                             contentPadding: EdgeInsets.zero, // removes horizontal padding
                             visualDensity: const VisualDensity(horizontal: -4, vertical: -4), // tighten spacing
                             onChanged: (checked) {

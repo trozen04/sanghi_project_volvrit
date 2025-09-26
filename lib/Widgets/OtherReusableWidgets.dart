@@ -175,7 +175,7 @@ class ImageStackWidget extends StatelessWidget {
   final double width;
   final Function(String) onImageTap;
 
-  const ImageStackWidget({
+  const ImageStackWidget({super.key, 
     required this.currentImage,
     required this.additionalImages,
     required this.height,
@@ -185,7 +185,7 @@ class ImageStackWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       height: height * 0.3,
       width: double.infinity,
       child: Stack(
@@ -238,7 +238,7 @@ class InfoRowWidget extends StatelessWidget {
   final String value;
   final bool? isLast;
 
-  const InfoRowWidget({
+  const InfoRowWidget({super.key, 
     required this.label,
     required this.value,
     this.isLast = false,
@@ -290,13 +290,13 @@ class OrderCard extends StatelessWidget {
   final List<String> images;
 
   const OrderCard({
-    Key? key,
+    super.key,
     required this.orderId,
     required this.date,
     required this.status,
     required this.statusColor,
     required this.images,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -479,7 +479,7 @@ class NotificationCard extends StatelessWidget {
   final double height;
   final double width;
 
-  NotificationCard({
+  const NotificationCard({super.key, 
     required this.title,
     required this.date,
     required this.time,

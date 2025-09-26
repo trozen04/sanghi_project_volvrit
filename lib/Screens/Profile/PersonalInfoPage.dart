@@ -10,6 +10,8 @@ import 'package:gold_project/Widgets/OtherReusableWidgets.dart';
 class PersonalInfoPage extends StatelessWidget {
   bool isLoading = false;
 
+  PersonalInfoPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
@@ -39,7 +41,7 @@ class PersonalInfoPage extends StatelessWidget {
             ...userData.keys.map((key) {
               final value = userData[key]!;
               return InfoRowWidget(label: key, value: value);
-            }).toList(),
+            }),
 
             SizedBox(height: height * 0.04),
 
@@ -68,7 +70,7 @@ class PersonalInfoPage extends StatelessWidget {
                     SizedBox(width: width * 0.02),
                     Text(
                       'Edit Profile',
-                      style: FFontStyles.quantity(16)?.copyWith(color: AppColors.primary),
+                      style: FFontStyles.quantity(16).copyWith(color: AppColors.primary),
                     ),
                   ],
                 ),

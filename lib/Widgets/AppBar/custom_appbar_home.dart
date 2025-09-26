@@ -5,6 +5,8 @@ import 'package:gold_project/Utils/FFontStyles.dart';
 import 'package:gold_project/Utils/ImageAssets.dart';
 
 class CustomAppBarHome extends StatefulWidget implements PreferredSizeWidget {
+  const CustomAppBarHome({super.key});
+
   @override
   Size get preferredSize => const Size.fromHeight(150.0); // smaller height
 

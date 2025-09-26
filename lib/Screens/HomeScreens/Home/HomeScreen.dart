@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:gold_project/ShimmersAndAnimations/Animations.dart';
 import 'package:gold_project/Routes/app_routes.dart';
-import 'package:gold_project/Screens/BottomNavBar/CustomNavbar.dart';
 import 'package:gold_project/ShimmersAndAnimations/Shimmers.dart';
 import 'package:gold_project/Utils/AppColors.dart';
 import 'package:gold_project/Utils/FFontStyles.dart';
 import 'package:gold_project/Utils/ImageAssets.dart';
-import 'package:gold_project/Utils/PrefUtils.dart';
 import 'package:gold_project/Widgets/ProductCard.dart';
 import 'package:gold_project/Widgets/AppBar/custom_appbar_home.dart';
 import 'package:gold_project/Widgets/SearchBarWidget.dart';

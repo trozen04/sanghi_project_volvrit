@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
         builder: (context, child) {
           // Force textScaleFactor to 1 globally
           return MediaQuery(
-            data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
+            data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(1.0)),
             child: child!,
           );
         },

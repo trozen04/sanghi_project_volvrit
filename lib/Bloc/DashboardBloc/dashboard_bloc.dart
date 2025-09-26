@@ -174,7 +174,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   Map<String, dynamic> _filterNulls(Map<String, dynamic> body) {
     final filtered = <String, dynamic>{};
     body.forEach((k, v) {
-      if (v != null && (!(v is String) || v.trim().isNotEmpty)) {
+      if (v != null && (v is! String || v.trim().isNotEmpty)) {
         filtered[k] = v;
       }
     });

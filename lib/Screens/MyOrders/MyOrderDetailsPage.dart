@@ -3,12 +3,11 @@ import 'package:gold_project/ShimmersAndAnimations/Animations.dart';
 import 'package:gold_project/ShimmersAndAnimations/Shimmers.dart';
 import 'package:gold_project/Utils/AppColors.dart';
 import 'package:gold_project/Utils/FFontStyles.dart';
-import 'package:gold_project/Utils/ImageAssets.dart';
 import 'package:gold_project/Widgets/AppBar/CustomAppBar.dart';
 import 'package:gold_project/Widgets/OtherReusableWidgets.dart';
 
 class MyOrderDetailsPage extends StatefulWidget {
-  MyOrderDetailsPage({super.key});
+  const MyOrderDetailsPage({super.key});
 
   @override
   State<MyOrderDetailsPage> createState() => _MyOrderDetailsPageState();

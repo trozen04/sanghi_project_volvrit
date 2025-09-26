@@ -11,7 +11,7 @@ class ContentReveal extends StatefulWidget {
   final bool animateOnce; // set true to avoid re-triggering on rebuild
 
   const ContentReveal({
-    Key? key,
+    super.key,
     required this.child,
     this.duration = const Duration(milliseconds: 450),
     this.delay = Duration.zero,
@@ -19,7 +19,7 @@ class ContentReveal extends StatefulWidget {
     this.beginOffset = const Offset(0, 0.04),
     this.beginScale = 0.99,
     this.animateOnce = true,
-  }) : super(key: key);
+  });
 
   @override
   State<ContentReveal> createState() => _ContentRevealState();
@@ -103,7 +103,7 @@ class StaggeredReveal extends StatefulWidget {
   final bool animateOnce;
 
   const StaggeredReveal({
-    Key? key,
+    super.key,
     required this.children,
     this.duration = const Duration(milliseconds: 700),
     this.initialDelay = Duration.zero,
@@ -112,7 +112,7 @@ class StaggeredReveal extends StatefulWidget {
     this.beginOffset = const Offset(0, 0.06),
     this.beginScale = 0.985,
     this.animateOnce = true,
-  }) : super(key: key);
+  });
 
   @override
   State<StaggeredReveal> createState() => _StaggeredRevealState();
@@ -208,12 +208,12 @@ class ParallaxFadeIn extends StatefulWidget {
   final Offset offset; // e.g. Offset(-0.2, 0) for left, Offset(0.2,0) for right
 
   const ParallaxFadeIn({
-    Key? key,
+    super.key,
     required this.child,
     this.duration = const Duration(milliseconds: 700),
     this.curve = Curves.easeOutCubic,
     this.offset = const Offset(-0.5, 0),
-  }) : super(key: key);
+  });
 
   @override
   State<ParallaxFadeIn> createState() => _ParallaxFadeInState();

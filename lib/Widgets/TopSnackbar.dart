@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:gold_project/Utils/AppColors.dart';
-import 'package:gold_project/Utils/FFontStyles.dart';
 
 class TopSnackbar {
   static OverlayEntry? _currentSnackbar;
   static bool _isShowing = false;
-  static bool _isError = false; // just bool
+  static final bool _isError = false; // just bool
   static DateTime? _lastShown;
 
   /// Show a top snackbar

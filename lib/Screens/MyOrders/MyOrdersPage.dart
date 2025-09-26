@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gold_project/ShimmersAndAnimations/Animations.dart';
 import 'package:gold_project/Routes/app_routes.dart';
 import 'package:gold_project/ShimmersAndAnimations/Shimmers.dart';
 import 'package:gold_project/Utils/AppColors.dart';
@@ -9,7 +8,7 @@ import 'package:gold_project/Widgets/AppBar/CustomAppBar.dart';
 import 'package:gold_project/Widgets/OtherReusableWidgets.dart';
 
 class MyOrdersPage extends StatefulWidget {
-  const MyOrdersPage({Key? key}) : super(key: key);
+  const MyOrdersPage({super.key});
 
   @override
   State<MyOrdersPage> createState() => _MyOrdersPageState();

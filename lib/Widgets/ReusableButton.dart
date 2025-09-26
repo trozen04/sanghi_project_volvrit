@@ -9,7 +9,7 @@ class ReusableButton extends StatelessWidget {
   final double? width;
   final bool? isRounded;
 
-  const ReusableButton({
+  const ReusableButton({super.key, 
     required this.text,
     required this.onPressed,
     this.color,

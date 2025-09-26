@@ -88,7 +88,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         backgroundColor: AppColors.primary,
         body: Stack(
           children: [
-            Container(
+            SizedBox(
               height: height * 0.5,
               child: Image.asset(ImageAssets.LoginBG),
             ),
@@ -103,109 +103,121 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   SizedBox(height: height * 0.005),
                   Text(Constants.loginSubtitle, style: FFontStyles.subtitle(16)),
                   SizedBox(height: height * 0.03),
-                  Flexible(
-                    child: SingleChildScrollView(
-                      child: Container(
-                        width: width,
-                        padding: EdgeInsets.symmetric(horizontal: width * 0.04, vertical: height * 0.03),
-                        decoration: const BoxDecoration(
-                          color: AppColors.background,
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(30),
-                            topRight: Radius.circular(30),
-                          ),
+                  Expanded(
+                    child: Container(
+                      width: width,
+                      padding: EdgeInsets.symmetric(horizontal: width * 0.04, vertical: height * 0.03),
+                      decoration: const BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(30),
+                          topRight: Radius.circular(30),
                         ),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Business Name
-                              Text('Business Name', style: FFontStyles.emailLabel(16)),
-                              CustomTextField(
-                                controller: _businessName,
-                                hint: 'Enter your business name',
-                                errorText: _businessNameError ? 'Business name cannot be empty' : null,
-                                onChanged: (_) => setState(() => _businessNameError = false),
-                                textCapitalization: TextCapitalization.words,
-                              ),
-                              SizedBox(height: height * 0.01),
-
-                              // Person Name
-                              Text('Person Name', style: FFontStyles.emailLabel(16)),
-                              CustomTextField(
-                                controller: _personName,
-                                hint: 'Enter your name',
-                                errorText: _personNameError ? 'Please enter your name' : null,
-                                onChanged: (_) => setState(() => _personNameError = false),
-                                textCapitalization: TextCapitalization.words,
-                              ),
-                              SizedBox(height: height * 0.01),
-
-                              // Email
-                              Text('Email', style: FFontStyles.emailLabel(16)),
-                              CustomTextField(
-                                controller: _email,
-                                keyboardType: TextInputType.emailAddress,
-                                hint: Constants.emailHint,
-                                errorText: _emailError ? 'Enter a valid email address' : null,
-                                onChanged: (_) => setState(() => _emailError = false),
-                              ),
-                              SizedBox(height: height * 0.01),
-
-                              // Phone Number
-                              Text('Phone Number', style: FFontStyles.emailLabel(16)),
-                              CustomTextField(
-                                controller: _phone,
-                                keyboardType: TextInputType.phone,
-                                hint: 'Enter your phone number',
-                                errorText: _phoneError ? 'Phone number must be at least 10 digits' : null,
-                                onChanged: (_) => setState(() => _phoneError = false),
-                              ),
-                              SizedBox(height: height * 0.01),
-
-                              // GST Number (Optional)
-                              Text('GST number(optional)', style: FFontStyles.emailLabel(16)),
-                              CustomTextField(
-                                controller: _gst,
-                                hint: 'Enter your GST number',
-                              ),
-                              SizedBox(height: height * 0.01),
-
-                              // Business Address
-                              Text('Business Address', style: FFontStyles.emailLabel(16)),
-                              CustomTextField(
-                                controller: _address,
-                                maxLines: 1,
-                                hint: 'Enter your business address',
-                                errorText: _addressError ? 'Address cannot be empty' : null,
-                                onChanged: (_) => setState(() => _addressError = false),
-                              ),
-
-                              // Signup Button
-                              SizedBox(height: height * 0.02),
-                              ReusableButton(
-                                text:  Constants.signup,
-                                onPressed: _onSignup,
-                                width: width,
-                                isRounded: true,
-                              ),
-                              SizedBox(height: height * 0.02),
-
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                      ),
+                      child: SingleChildScrollView(
+                        physics: BouncingScrollPhysics(),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: width * 0.04,
+                          vertical: height * 0.03,
+                        ),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: height * 0.5, // fills remaining screen
+                          ),
+                          child: IntrinsicHeight(
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(Constants.noAccount, style: FFontStyles.noAccountText(14)),
-                                  GestureDetector(
-                                    onTap: () {
-                                      Navigator.pushNamed(context, AppRoutes.login);
-                                    },
-                                    child: Text(Constants.loginBtn,
-                                        style: FFontStyles.noAccountText(14).copyWith(color: AppColors.primary)),
+                                  // Business Name
+                                  Text('Business Name', style: FFontStyles.emailLabel(16)),
+                                  CustomTextField(
+                                    controller: _businessName,
+                                    hint: 'Enter your business name',
+                                    errorText: _businessNameError ? 'Business name cannot be empty' : null,
+                                    onChanged: (_) => setState(() => _businessNameError = false),
+                                    textCapitalization: TextCapitalization.words,
                                   ),
+                                  SizedBox(height: height * 0.01),
+
+                                  // Person Name
+                                  Text('Person Name', style: FFontStyles.emailLabel(16)),
+                                  CustomTextField(
+                                    controller: _personName,
+                                    hint: 'Enter your name',
+                                    errorText: _personNameError ? 'Please enter your name' : null,
+                                    onChanged: (_) => setState(() => _personNameError = false),
+                                    textCapitalization: TextCapitalization.words,
+                                  ),
+                                  SizedBox(height: height * 0.01),
+
+                                  // Email
+                                  Text('Email', style: FFontStyles.emailLabel(16)),
+                                  CustomTextField(
+                                    controller: _email,
+                                    keyboardType: TextInputType.emailAddress,
+                                    hint: Constants.emailHint,
+                                    errorText: _emailError ? 'Enter a valid email address' : null,
+                                    onChanged: (_) => setState(() => _emailError = false),
+                                  ),
+                                  SizedBox(height: height * 0.01),
+
+                                  // Phone Number
+                                  Text('Phone Number', style: FFontStyles.emailLabel(16)),
+                                  CustomTextField(
+                                    controller: _phone,
+                                    keyboardType: TextInputType.phone,
+                                    hint: 'Enter your phone number',
+                                    errorText: _phoneError ? 'Phone number must be at least 10 digits' : null,
+                                    onChanged: (_) => setState(() => _phoneError = false),
+                                  ),
+                                  SizedBox(height: height * 0.01),
+
+                                  // GST Number (Optional)
+                                  Text('GST number(optional)', style: FFontStyles.emailLabel(16)),
+                                  CustomTextField(
+                                    controller: _gst,
+                                    hint: 'Enter your GST number',
+                                  ),
+                                  SizedBox(height: height * 0.01),
+
+                                  // Business Address
+                                  Text('Business Address', style: FFontStyles.emailLabel(16)),
+                                  CustomTextField(
+                                    controller: _address,
+                                    maxLines: 1,
+                                    hint: 'Enter your business address',
+                                    errorText: _addressError ? 'Address cannot be empty' : null,
+                                    onChanged: (_) => setState(() => _addressError = false),
+                                  ),
+
+                                  // Signup Button
+                                  SizedBox(height: height * 0.02),
+                                  ReusableButton(
+                                    text:  Constants.signup,
+                                    onPressed: _onSignup,
+                                    width: width,
+                                    isRounded: true,
+                                  ),
+                                  SizedBox(height: height * 0.02),
+
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(Constants.noAccount, style: FFontStyles.noAccountText(14)),
+                                      GestureDetector(
+                                        onTap: () {
+                                          Navigator.pushNamed(context, AppRoutes.login);
+                                        },
+                                        child: Text(Constants.loginBtn,
+                                            style: FFontStyles.noAccountText(14).copyWith(color: AppColors.primary)),
+                                      ),
+                                    ],
+                                  )
                                 ],
-                              )
-                            ],
+                              ),
+                            ),
                           ),
                         ),
                       ),
