@@ -8,8 +8,8 @@ final class ProfileInitial extends ProfileState {}
 /// ----- FETCH -----
 final class ProfileLoading extends ProfileState {}
 final class ProfileLoaded extends ProfileState {
-  final Map<String, dynamic> profile;
-  ProfileLoaded(this.profile);
+  final profileData;
+  ProfileLoaded(this.profileData);
 }
 final class ProfileError extends ProfileState {
   final String message;

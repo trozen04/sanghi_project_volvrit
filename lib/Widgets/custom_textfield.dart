@@ -8,9 +8,9 @@ class CustomTextField extends StatelessWidget {
   final String? label;
   final String hint;
   final bool obscure;
-
   final TextInputType? keyboardType;
   final int? maxLines;
+  final int? maxLength; // <-- new optional parameter
   final String? Function(String?)? validator;
   final String? errorText;
   final void Function(String)? onChanged;
@@ -24,6 +24,7 @@ class CustomTextField extends StatelessWidget {
     this.obscure = false,
     this.keyboardType,
     this.maxLines = 1,
+    this.maxLength, // <-- initialize
     this.validator,
     this.errorText,
     this.onChanged,
@@ -47,6 +48,7 @@ class CustomTextField extends StatelessWidget {
             obscureText: obscure,
             keyboardType: keyboardType,
             maxLines: maxLines,
+            maxLength: maxLength, // <-- set maxLength
             validator: validator,
             onChanged: onChanged,
             textCapitalization: textCapitalization,
@@ -60,17 +62,17 @@ class CustomTextField extends StatelessWidget {
               ),
               contentPadding: EdgeInsets.symmetric(
                 vertical: height * 0.015,
-                horizontal: width * 0.03, // applies only to input
+                horizontal: width * 0.03,
               ),
               isDense: true,
               alignLabelWithHint: true,
+              counterText: '', // <-- hides the default counter
             ),
           ),
         ),
-        // Manual error text display
         if (errorText != null || (validator?.call(controller.text) != null))
           Padding(
-            padding: EdgeInsets.only(left: width * 0.0, top: 4),
+            padding: EdgeInsets.only(left: 0, top: 4),
             child: Text(
               errorText ?? validator?.call(controller.text) ?? '',
               style: const TextStyle(

@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "315905323087",
+    "project_id": "sanghi-666b0",
+    "storage_bucket": "sanghi-666b0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:315905323087:android:32f23e9f7e831773817a3a",
+        "android_client_info": {
+          "package_name": "com.business.gold_project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUJspJtKPIMnElm1yRSV-G0Tjb9nw6i_Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:315905323087:android:026d5cf193e25a47817a3a",
+        "android_client_info": {
+          "package_name": "com.volvrit.sanghi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUJspJtKPIMnElm1yRSV-G0Tjb9nw6i_Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

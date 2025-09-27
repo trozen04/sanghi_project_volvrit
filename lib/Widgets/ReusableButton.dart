@@ -8,6 +8,7 @@ class ReusableButton extends StatelessWidget {
   final Color? color;
   final double? width;
   final bool? isRounded;
+  final bool? isLoading;
 
   const ReusableButton({super.key, 
     required this.text,
@@ -15,6 +16,7 @@ class ReusableButton extends StatelessWidget {
     this.color,
     this.width,
     this.isRounded,
+    this.isLoading = false,
   });
 
   @override
@@ -33,7 +35,11 @@ class ReusableButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(isRounded == true ? 100 : 6),
           ),
           child: Center(
-            child: Text(
+            child: isLoading!
+                ? SizedBox(
+              height: 35,
+                child: CircularProgressIndicator())
+            : Text(
               text,
               style: FFontStyles.button(16),
             ),

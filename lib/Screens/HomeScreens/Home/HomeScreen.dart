@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gold_project/Bloc/DashboardBloc/dashboard_bloc.dart';
 import 'package:gold_project/ShimmersAndAnimations/Animations.dart';
 import 'package:gold_project/Routes/app_routes.dart';
 import 'package:gold_project/ShimmersAndAnimations/Shimmers.dart';
@@ -9,6 +10,7 @@ import 'package:gold_project/Widgets/ProductCard.dart';
 import 'package:gold_project/Widgets/AppBar/custom_appbar_home.dart';
 import 'package:gold_project/Widgets/SearchBarWidget.dart';
 import 'package:gold_project/Widgets/TopSnackbar.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,7 +29,6 @@ class _HomeScreenState extends State<HomeScreen> {
     'Bangles': ImageAssets.EarringImage,
     'Chains': ImageAssets.EarringImage,
   };
-
   final Map<String, List<Map<String, dynamic>>> productsByCategory = {
     'Earrings': [
       {'title': 'Gold Earrings', 'image': ImageAssets.RingImage, 'stock': 2},
@@ -56,12 +57,14 @@ class _HomeScreenState extends State<HomeScreen> {
       {'title': 'Silver Chain', 'image': ImageAssets.RingImage, 'stock': 2},
     ],
   };
-
   bool isLoading = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DashboardBloc>().add(FetchGoldValueEventHandler());
+    });
   }
 
   @override

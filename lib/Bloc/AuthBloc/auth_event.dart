@@ -15,21 +15,19 @@ final class AuthLoginRequested extends AuthEvent {
 final class AuthRegisterRequested extends AuthEvent {
   final String name;
   final String email;
-  final String password;
-  final String contact;
-
+  final String phone;
+  final String businessName;
+  final String address;
   // Optional fields
   final String? gst;
-  final String? businessName;
-  final String? address;
+
 
   AuthRegisterRequested({
     required this.name,
     required this.email,
-    required this.password,
-    required this.contact,
+    required this.phone,
     this.gst,
-    this.businessName,
-    this.address,
+    required this.businessName,
+    required this.address,
   });
 }

@@ -262,12 +262,21 @@ class InfoRowWidget extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: FFontStyles.personalInfoLabel(16),
-            overflow: TextOverflow.ellipsis,
+          // Label takes only as much as needed
+          Flexible(
+            flex: 2,
+            child: Text(
+              label,
+              style: FFontStyles.personalInfoLabel(16),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          Expanded(
+
+          SizedBox(width: 8), // spacing
+
+          // Value takes remaining space
+          Flexible(
+            flex: 3,
             child: Text(
               value,
               textAlign: TextAlign.end,
@@ -276,7 +285,8 @@ class InfoRowWidget extends StatelessWidget {
             ),
           ),
         ],
-      ),
+      )
+
     );
   }
 }

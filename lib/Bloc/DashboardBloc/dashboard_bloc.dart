@@ -3,6 +3,7 @@ import 'package:bloc/bloc.dart';
 import 'package:gold_project/Utils/ApiConstants.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
+import 'dart:developer' as developer;
 
 part 'dashboard_event.dart';
 part 'dashboard_state.dart';
@@ -14,21 +15,26 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       emit(GoldValueLoading());
       try {
         // body (example optional params)
-        final body = {
-          'currency': 'INR',
-          'date': null,
-        };
-        final params = _filterNulls(body);
+        // final body = {
+        //   'currency': 'INR',
+        //   'date': null,
+        // };
+        // final params = _filterNulls(body);
+
+        final url = ApiConstants.baseUrl + ApiConstants.goldPrice;
+        developer.log('url: $url');
 
         final res = await http.get(
-          Uri.parse(ApiConstants.baseUrl).replace(queryParameters: params),
+         // Uri.parse(ApiConstants.baseUrl).replace(queryParameters: params),
+          Uri.parse(url),
         );
-
-        final data = jsonDecode(res.body);
+        final responseData = jsonDecode(res.body);
+        developer.log('data: $responseData');
         if (res.statusCode == 200) {
+          final data = responseData['data'];
           emit(GoldValueLoaded(data));
         } else {
-          emit(GoldValueError(data['message'] ?? 'Failed to load gold value'));
+          emit(GoldValueError(responseData['message'] ?? 'Failed to load gold value'));
         }
       } catch (e) {
         emit(GoldValueError(e.toString()));

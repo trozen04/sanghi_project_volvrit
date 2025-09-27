@@ -3,77 +3,65 @@ import 'package:bloc/bloc.dart';
 import 'package:gold_project/Utils/ApiConstants.dart';
 import 'package:meta/meta.dart';
 import 'package:http/http.dart' as http;
+import 'dart:developer' as developer;
 
 part 'notification_event.dart';
 part 'notification_state.dart';
 
 class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
   NotificationBloc() : super(NotificationInitial()) {
-    on<FetchNotificationsEventHandler>(_onFetchNotifications);
-    on<MarkNotificationReadEventHandler>(_onMarkNotificationRead);
-  }
+    on<FetchNotificationsEventHandler>((event, emit) async {
+      emit(NotificationsLoading());
+      try {
+        // Optional query parameters
+        final body = {
+          'unread_only': event.unreadOnly,
+          // 'user_id': Prefs.getUserId(), // if needed
+        }..removeWhere((key, value) => value == null || value.toString().trim().isEmpty);
 
-  /// Remove null/empty values from body map
-  Map<String, dynamic> _filterNulls(Map<String, dynamic> data) {
-    final filtered = <String, dynamic>{};
-    data.forEach((key, value) {
-      if (value != null && value.toString().trim().isNotEmpty) {
-        filtered[key] = value;
+        final url = '${ApiConstants.baseUrl}';
+        developer.log('url: $url, params: $body');
+
+        final uri = Uri.parse(url).replace(queryParameters: body);
+        final res = await http.get(uri);
+
+        developer.log('body: ${res.body}');
+        final responseData = jsonDecode(res.body);
+
+        if (res.statusCode == 200) {
+          emit(NotificationsLoaded(responseData['notifications'] ?? []));
+        } else {
+          emit(NotificationsError(responseData['message'] ?? 'Failed to fetch notifications'));
+        }
+      } catch (e) {
+        emit(NotificationsError(e.toString()));
       }
     });
-    return filtered;
-  }
 
-  /// Fetch all notifications
-  Future<void> _onFetchNotifications(
-      FetchNotificationsEventHandler event, Emitter<NotificationState> emit) async {
-    emit(NotificationsLoading());
-    try {
-      final body = {
-        'unread_only': event.unreadOnly,
-        // 'user_id': '123', // example optional param
-      };
-      final params = _filterNulls(body);
+    on<MarkNotificationReadEventHandler>((event, emit) async {
+      emit(NotificationMarking());
+      try {
+        final body = {
+          'notification_id': event.notificationId,
+          // 'user_id': Prefs.getUserId(), // optional
+        }..removeWhere((key, value) => value == null || value.toString().trim().isEmpty);
 
-      final res = await http.get(
-        Uri.parse(ApiConstants.baseUrl).replace(queryParameters: params),
-      );
+        final url = '${ApiConstants.baseUrl}';
+        developer.log('url: $url, body: $body');
 
-      final data = jsonDecode(res.body);
-      if (res.statusCode == 200) {
-        emit(NotificationsLoaded(data['notifications'] ?? []));
-      } else {
-        emit(NotificationsError(data['message'] ?? 'Failed to fetch notifications'));
+        final res = await http.post(Uri.parse(url), body: body);
+
+        developer.log('body: ${res.body}');
+        final responseData = jsonDecode(res.body);
+
+        if (res.statusCode == 200) {
+          emit(NotificationMarked(event.notificationId));
+        } else {
+          emit(NotificationMarkError(responseData['message'] ?? 'Failed to mark notification'));
+        }
+      } catch (e) {
+        emit(NotificationMarkError(e.toString()));
       }
-    } catch (e) {
-      emit(NotificationsError(e.toString()));
-    }
-  }
-
-  /// Mark a notification as read
-  Future<void> _onMarkNotificationRead(
-      MarkNotificationReadEventHandler event, Emitter<NotificationState> emit) async {
-    emit(NotificationMarking());
-    try {
-      final body = {
-        'notification_id': event.notificationId,
-        // 'user_id': '123', // example optional param
-      };
-      final params = _filterNulls(body);
-
-      final res = await http.post(
-        Uri.parse(ApiConstants.baseUrl),
-        body: params,
-      );
-
-      final data = jsonDecode(res.body);
-      if (res.statusCode == 200) {
-        emit(NotificationMarked(event.notificationId));
-      } else {
-        emit(NotificationMarkError(data['message'] ?? 'Failed to mark notification'));
-      }
-    } catch (e) {
-      emit(NotificationMarkError(e.toString()));
-    }
+    });
   }
 }

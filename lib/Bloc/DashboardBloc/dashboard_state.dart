@@ -8,7 +8,7 @@ final class DashboardInitial extends DashboardState {}
 // ----- GOLD VALUE -----
 final class GoldValueLoading extends DashboardState {}
 final class GoldValueLoaded extends DashboardState {
-  final Map<String, dynamic> goldData;
+  final goldData;
   GoldValueLoaded(this.goldData);
 }
 final class GoldValueError extends DashboardState {

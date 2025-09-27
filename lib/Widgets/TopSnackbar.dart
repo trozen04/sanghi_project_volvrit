@@ -41,6 +41,7 @@ class TopSnackbar {
                 color: backgroundColor,
                 borderRadius: BorderRadius.circular(8),
               ),
+              alignment: Alignment.center,
               child: Text(
                 message,
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),

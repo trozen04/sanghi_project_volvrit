@@ -3,76 +3,65 @@ import 'package:bloc/bloc.dart';
 import 'package:gold_project/Utils/ApiConstants.dart';
 import 'package:meta/meta.dart';
 import 'package:http/http.dart' as http;
+import 'dart:developer' as developer;
 
 part 'my_orders_event.dart';
 part 'my_orders_state.dart';
 
 class MyOrdersBloc extends Bloc<MyOrdersEvent, MyOrdersState> {
   MyOrdersBloc() : super(MyOrdersInitial()) {
-    on<FetchOrdersEventHandler>(_onFetchOrders);
-    on<FetchOrderDetailsEventHandler>(_onFetchOrderDetails);
-  }
 
-  /// Remove null/empty values from body map
-  Map<String, dynamic> _filterNulls(Map<String, dynamic> data) {
-    final filtered = <String, dynamic>{};
-    data.forEach((key, value) {
-      if (value != null && value.toString().trim().isNotEmpty) {
-        filtered[key] = value;
+    // Fetch all orders
+    on<FetchOrdersEventHandler>((event, emit) async {
+      emit(OrdersLoading());
+      try {
+        // Optional query parameters
+        final params = <String, String>{
+          if (event.status != null && event.status!.trim().isNotEmpty) 'status': event.status!,
+          // 'user_id': Prefs.getUserId(), // optional
+        };
+
+        final url = '${ApiConstants.baseUrl}';
+        final uri = Uri.parse(url).replace(queryParameters: params);
+
+        developer.log('Fetching orders: $uri');
+
+        final res = await http.get(uri);
+        developer.log('Response: ${res.body}');
+
+        final responseData = jsonDecode(res.body);
+
+        if (res.statusCode == 200) {
+          emit(OrdersLoaded(responseData['orders'] ?? []));
+        } else {
+          emit(OrdersError(responseData['message'] ?? 'Failed to fetch orders'));
+        }
+      } catch (e) {
+        emit(OrdersError(e.toString()));
       }
     });
-    return filtered;
-  }
 
-  /// Fetch all orders
-  Future<void> _onFetchOrders(
-      FetchOrdersEventHandler event, Emitter<MyOrdersState> emit) async {
-    emit(OrdersLoading());
-    try {
-      final body = {
-        'status': event.status,
-        // 'user_id': '123', // example optional param
-      };
-      final params = _filterNulls(body);
+    // Fetch single order details
+    on<FetchOrderDetailsEventHandler>((event, emit) async {
+      emit(OrderDetailsLoading());
+      try {
+        final url = '${ApiConstants.baseUrl}/${event.orderId}';
+        developer.log('Fetching order details: $url');
 
-      final res = await http.get(
-        Uri.parse(ApiConstants.baseUrl).replace(queryParameters: params),
-      );
+        final res = await http.get(Uri.parse(url));
+        developer.log('Response: ${res.body}');
 
-      final data = jsonDecode(res.body);
-      if (res.statusCode == 200) {
-        emit(OrdersLoaded(data['orders'] ?? []));
-      } else {
-        emit(OrdersError(data['message'] ?? 'Failed to fetch orders'));
+        final responseData = jsonDecode(res.body);
+
+        if (res.statusCode == 200) {
+          emit(OrderDetailsLoaded(responseData));
+        } else {
+          emit(OrderDetailsError(responseData['message'] ?? 'Failed to fetch order details'));
+        }
+      } catch (e) {
+        emit(OrderDetailsError(e.toString()));
       }
-    } catch (e) {
-      emit(OrdersError(e.toString()));
-    }
-  }
+    });
 
-  /// Fetch a single order’s details
-  Future<void> _onFetchOrderDetails(
-      FetchOrderDetailsEventHandler event, Emitter<MyOrdersState> emit) async {
-    emit(OrderDetailsLoading());
-    try {
-      final body = {
-        'order_id': event.orderId,
-        // 'include_items': true, // optional example
-      };
-      final params = _filterNulls(body);
-
-      final res = await http.get(
-        Uri.parse(ApiConstants.baseUrl).replace(queryParameters: params),
-      );
-
-      final data = jsonDecode(res.body);
-      if (res.statusCode == 200) {
-        emit(OrderDetailsLoaded(data));
-      } else {
-        emit(OrderDetailsError(data['message'] ?? 'Failed to fetch order details'));
-      }
-    } catch (e) {
-      emit(OrderDetailsError(e.toString()));
-    }
   }
 }

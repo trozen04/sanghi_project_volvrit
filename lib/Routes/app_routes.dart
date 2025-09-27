@@ -47,7 +47,7 @@ class AppRoutes {
       case personalInfoPage:
         return _buildPageRoute(PersonalInfoPage(), settings);
       case editProfilePage:
-        return _buildPageRoute(EditProfilePage(), settings);
+        return _buildPageRoute(EditProfilePage(profileData: {},), settings);
       case orderPage:
         return _buildPageRoute(MyOrdersPage(), settings);
       case myOrderDetailsPage:
