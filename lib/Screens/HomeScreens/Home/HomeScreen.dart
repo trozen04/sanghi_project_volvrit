@@ -6,6 +6,7 @@ import 'package:gold_project/ShimmersAndAnimations/Shimmers.dart';
 import 'package:gold_project/Utils/AppColors.dart';
 import 'package:gold_project/Utils/FFontStyles.dart';
 import 'package:gold_project/Utils/ImageAssets.dart';
+import 'package:gold_project/Utils/PrefUtils.dart';
 import 'package:gold_project/Widgets/ProductCard.dart';
 import 'package:gold_project/Widgets/AppBar/custom_appbar_home.dart';
 import 'package:gold_project/Widgets/SearchBarWidget.dart';
@@ -58,13 +59,21 @@ class _HomeScreenState extends State<HomeScreen> {
     ],
   };
   bool isLoading = false;
+  String? token = '';
 
   @override
   void initState() {
     super.initState();
+    print('token = $token');
+    fetchToken();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DashboardBloc>().add(FetchGoldValueEventHandler());
     });
+  }
+
+  void fetchToken() async {
+    token = await Prefs.getUserToken();
+    print('token = $token');
   }
 
   @override

@@ -80,7 +80,7 @@ class _CustomAppBarHomeState extends State<CustomAppBarHome> {
                 child: isLoading
                     ? const CircularProgressIndicator(strokeWidth: 2)
                     : livePrices.isEmpty
-                    ? Text('No prices available', style: FFontStyles.liveText(10))
+                    ? Text('No gold prices available', style: FFontStyles.liveText(10))
                     : Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [

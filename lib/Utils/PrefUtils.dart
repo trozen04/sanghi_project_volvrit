@@ -4,6 +4,7 @@ class Prefs {
   // Keys
   static const String _keyIsLoggedIn = 'isLoggedIn';
   static const String _keyUserId = 'userId';
+  static const String _keyUserToken = 'userToken';
   static const String _keyFcmToken = 'fcmToken';
 
   // Save login status
@@ -28,6 +29,17 @@ class Prefs {
   static Future<String?> getUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_keyUserId); // returns null if not set
+  }
+
+  static Future<void> setUserToken(String userToken) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyUserToken, userToken);
+  }
+
+  // Get userId
+  static Future<String?> getUserToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyUserToken); // returns null if not set
   }
 
   // Save FCM token

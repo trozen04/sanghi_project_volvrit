@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 import 'package:bloc/bloc.dart';
 import 'package:gold_project/Utils/ApiConstants.dart';
 import 'package:meta/meta.dart';
-import 'dart:developer' as developer;
 
 part 'auth_event.dart';
 part 'auth_state.dart';
@@ -16,9 +15,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthLoginRequested>((event, emit) async {
       emit(LoginLoading());
       try {
-        developer.log('body: ${event.email} and ${event.password}');
         final url = ApiConstants.baseUrl + ApiConstants.login;
-        developer.log('url: $url');
 
         final response = await http.post(
           Uri.parse(url),
@@ -28,7 +25,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             'password': event.password,
           }),
         );
-        developer.log('data: ${response.body}');
 
         final data = jsonDecode(response.body);
         if (response.statusCode == 200) {
@@ -48,29 +44,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       try {
         // Create a map with all fields (including optional)
         final Map<String, dynamic> body = {
-          'businessName': event.businessName,
-          'personalName': event.name,
+          'bussinessname': event.businessName,
+          'personname': event.name,
           'email': event.email,
           'phone': event.phone,
-          'gstNumber': event.gst,
-          'businessAddr': event.address,
+          'gstno': event.gst ?? '',
+          'bussinessaddress': event.address,
         };
-        developer.log('body: $body');
 
         // Remove all null or empty values
         final filteredBody = body..removeWhere((key, value) => value == null || (value is String && value.isEmpty));
 
-        developer.log('filteredBody: $filteredBody');
-        final url = ApiConstants.baseUrl + ApiConstants.signup;
-        developer.log('url: $url');
+        final url = ApiConstants.baseUrl + ApiConstants.register;
 
         final response = await http.post(
           Uri.parse(url),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(filteredBody),
         );
-        developer.log('data: ${response.body}');
-        developer.log('statusCode: ${response.statusCode}');
         final data = jsonDecode(response.body);
         if (response.statusCode == 200 || response.statusCode == 201) {
           emit(RegisterSuccess(response: data));

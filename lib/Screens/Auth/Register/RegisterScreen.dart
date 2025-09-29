@@ -10,7 +10,6 @@ import 'package:gold_project/Widgets/ReusableButton.dart';
 import 'package:gold_project/Widgets/TopSnackbar.dart';
 import 'package:gold_project/Widgets/custom_textfield.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'dart:developer' as developer;
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -48,7 +47,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _onSignup() {
-    developer.log('signup pressed');
     setState(() {
       _businessNameError = _businessName.text.isEmpty;
       _personNameError = _personName.text.isEmpty;
@@ -57,15 +55,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _phoneError = _phone.text.length < 10;
       _addressError = _address.text.isEmpty;
     });
-
-    // Log all field values
-    developer.log('Form Values:', name: 'SignupForm', error: false, stackTrace: null);
-    developer.log('Business Name: ${_businessName.text}', name: 'SignupForm');
-    developer.log('Person Name: ${_personName.text}', name: 'SignupForm');
-    developer.log('Email: ${_email.text}', name: 'SignupForm');
-    developer.log('Phone: ${_phone.text}', name: 'SignupForm');
-    developer.log('GST: ${_gst.text}', name: 'SignupForm');
-    developer.log('Address: ${_address.text}', name: 'SignupForm');
 
     // Show snackbar if any validation failed
     if (_businessNameError ||
@@ -122,12 +111,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if(state is RegisterLoading) {
-            developer.log('isLoading: ${isLoading}');
             setState(() {
               isLoading = true;
             });
           } else if(state is RegisterSuccess) {
-            developer.log('RegisterSuccess: ${state.response}');
             String message = state.response['message'];
             setState(() {
               isLoading = false;
@@ -136,7 +123,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             Navigator.pop(context);
 
           } else if(state is RegisterError) {
-            developer.log('error: ${state.message}');
             setState(() {
               isLoading = false;
             });

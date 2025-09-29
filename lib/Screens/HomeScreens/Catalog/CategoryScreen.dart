@@ -17,19 +17,23 @@ class CategoryScreen extends StatefulWidget {
 }
 
 class _CategoryScreenState extends State<CategoryScreen> {
-  List<String> selectedCategories = [];
+  dynamic selectedCategories = [];
   List<String> selectedFilters = [];
   List<String> selectedSort = [];
   bool isLoading = false;
+  GlobalKey categoryKey = GlobalKey();
+  GlobalKey filterKey = GlobalKey();
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
+    final height = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const CategoryAppBar(),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        padding: EdgeInsets.symmetric(horizontal: width * 0.04, vertical: height * 0.015),
         child: isLoading
             ? CategoryScreenShimmer()
             : ParallaxFadeIn(
@@ -37,75 +41,107 @@ class _CategoryScreenState extends State<CategoryScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // CATEGORY BUTTON
                   ActionButton(
+                    key: categoryKey,
                     icon: Icons.grid_view_outlined,
                     label: 'Category',
                     onTap: () async {
-                      final result = await showMultiSelectDialog(
-                        context: context,
-                        title: 'Select Category',
-                        options: const [
-                          'Gold Rings',
-                          'Gold Neckless',
-                          'Gold Bangles',
-                          'Gold Earrings',
-                        ],
-                        initiallySelected: selectedCategories,
-                      );
+                        final result = await showMultiSelectDropdown(
+                          context: context,
+                          key: categoryKey,
+                          enableSideDropdown: true,
+                          title: 'Select Category',
+                          options: const ['Gold Rings', 'Gold Neckless', 'Gold Bangles', 'Gold Earrings'],
+                          sideOptionsMap: const {
+                            'Gold Rings': ['Men', 'Women', 'Kids'],
+                            'Gold Neckless': ['Men', 'Women', 'Kids'],
+                            'Gold Bangles': ['Men', 'Women', 'Kids'],
+                            'Gold Earrings': ['Men', 'Women', 'Kids'],
+                          },
+                          initiallySelected: selectedCategories,
+                          onSelected: (selectedList) {
+                            setState(() => selectedCategories = selectedList);
+                          },
+                        );
+
+                      // Print the final selected items when dropdown(s) are closed
+                      print('Final selection: $result');
+
                       if (result != null) {
                         setState(() => selectedCategories = result);
                       }
                     },
                   ),
-
-                  Row(
-                    children: [
-                      // FILTER BUTTON
-                      ActionButton(
-                        icon: Icons.filter_list_rounded,
-                        label: 'Filter',
-                        onTap: () async {
-                          final result = await showMultiSelectDialog(
-                            context: context,
-                            title: 'Select Filter',
-                            options: const ['Men', 'Women', 'Kids'],
-                            initiallySelected: selectedFilters,
-                          );
-                          if (result != null) {
-                            setState(() => selectedFilters = result);
-                          }
+                  SizedBox(width: width * 0.05),
+                  ActionButton(
+                    key: filterKey,
+                    icon: Icons.filter_list_rounded,
+                    label: 'Filter',
+                    onTap: () async {
+                      final result = await showMultiSelectDropdown(
+                        context: context,
+                        enableSideDropdown: true,
+                        title: 'Select Filter',
+                        options: const ['Weight', 'Purity'],
+                        sideOptionsMap: const {
+                          'Weight': ['<3g','3-5g', '5–7g', '7–10g', '10–12g', '12–15g', '15–17g', '17–20g', '20g'],
+                          'Purity': ['18k', '20k', '22k', '24k'],
                         },
-                      ),
-                      SizedBox(width: width * 0.02),
-
-                      // SORT BUTTON
-                      ActionButton(
-                        icon: Icons.keyboard_arrow_down_outlined,
-                        label: 'Sort By',
-                        isRight: true,
-                        onTap: () async {
-                          final result = await showMultiSelectDialog(
-                            context: context,
-                            title: 'Sort By',
-                            options: const ['Price: Low to High', 'Price: High to Low'],
-                            initiallySelected: selectedSort,
-                          );
-                          if (result != null) {
-                            setState(() => selectedSort = result);
-                          }
+                        initiallySelected: selectedFilters,
+                        onSelected: (selectedList) {
+                          setState(() => selectedFilters = selectedList);
                         },
-                      ),
-                    ],
+                        key: filterKey,
+                      );
+                      print('Filter selection: $result');
+
+                      if (result != null) {
+                        setState(() => selectedFilters = result);
+                      }
+                    },
                   ),
+
+                  // Row(
+                  //   children: [
+                  //
+                  //     SizedBox(width: width * 0.02),
+                  //     // SORT BUTTON
+                  //     ActionButton(
+                  //       key: sorByKey,
+                  //       icon: Icons.keyboard_arrow_down_outlined,
+                  //       label: 'Sort By',
+                  //       isRight: true,
+                  //       onTap: () async {
+                  //         final result = await showMultiSelectDropdown(
+                  //           context: context,
+                  //           title: 'Sort By',
+                  //           singleSelection: true,
+                  //           options: const ['Ascending', 'Descending'],
+                  //           initiallySelected: selectedSort,
+                  //           onSelected: (selectedList) {
+                  //             setState(() => selectedSort = selectedList);
+                  //           },
+                  //           key: sorByKey
+                  //         );
+                  //
+                  //         print('Sort selection: $result');
+                  //
+                  //         if (result != null) {
+                  //           setState(() => selectedSort = result);
+                  //         }
+                  //       },
+                  //     ),
+                  //   ],
+                  // ),
+
                 ],
               ),
 
-              const SizedBox(height: 16),
+              SizedBox(height: height * 0.01),
               Text('Gold Rings', style: FFontStyles.titleText(18)),
-              const SizedBox(height: 12),
+              SizedBox(height: height * 0.01),
 
               Expanded(
                 child: GridView.builder(

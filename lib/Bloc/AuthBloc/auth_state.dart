@@ -8,7 +8,7 @@ final class AuthInitial extends AuthState {}
 // ---------------- LOGIN STATES ----------------
 final class LoginLoading extends AuthState {}
 final class LoginSuccess extends AuthState {
-  final response;
+  var response;
   LoginSuccess({required this.response});
 }
 final class LoginError extends AuthState {

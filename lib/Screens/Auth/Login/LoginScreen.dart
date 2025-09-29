@@ -11,7 +11,6 @@ import 'package:gold_project/Widgets/ReusableButton.dart';
 import 'package:gold_project/Widgets/TopSnackbar.dart';
 import 'package:gold_project/Widgets/custom_textfield.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'dart:developer' as developer;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -63,10 +62,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 isLoading = true;
               });
             } else if(state is LoginSuccess) {
-              developer.log('Login Success: ${state.response}');
               String message = state.response['message'];
-              String userId = state.response['userId'];
-              developer.log('Login Success: ${userId}');
+              String userToken = state.response['token'];
+              var user = state.response['user'];
+              String userId = user['id'];
 
               TopSnackbar.show(context, message: message);
               setState(() {
@@ -75,6 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
               // Save preferences asynchronously
               Prefs.setLoggedIn(true);
               Prefs.setUserId(userId);
+              Prefs.setUserId(userToken);
               Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
 
             } else if(state is LoginError) {
@@ -131,13 +131,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                   keyboardType: TextInputType.emailAddress,
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return 'Please enter email';
+                                      return 'Please enter your email';
                                     }
                                     if (!RegExp(Constants.emailPattern)
                                         .hasMatch(value)) {
                                       return 'Enter valid email';
                                     }
                                     return null;
+                                  },
+                                  onChanged: (_) {
+                                    // Re-run validation only for this field so its error disappears
+                                    _formKey.currentState!.validate();
                                   },
                                 ),
 
@@ -153,13 +157,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                   maxLines: 1,
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return 'Please enter password';
+                                      return 'Please enter your password';
                                     }
                                     if (!RegExp(Constants.passwordPattern)
                                         .hasMatch(value)) {
                                       return 'Min 6 chars, letters & numbers';
                                     }
                                     return null;
+                                  },
+                                  onChanged: (_) {
+                                    // Re-run validation only for this field so its error disappears
+                                    _formKey.currentState!.validate();
                                   },
                                 ),
                                 SizedBox(height: height * 0.02),
