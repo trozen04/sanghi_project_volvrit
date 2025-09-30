@@ -1,13 +1,15 @@
 buildscript {
-    ext.kotlin_version = '1.9.22' // Use the Kotlin version compatible with your project
+    //ext.kotlin_version = '1.9.22' // Use the Kotlin version compatible with your project
+     ext.kotlin_version = '2.1.0' // Use the Kotlin version compatible with your project
+
     repositories {
         google() // Required for google-services
         mavenCentral() // Required for other dependencies
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.1.0' // Adjust to your Flutter version
+        classpath 'com.android.tools.build:gradle:8.7.3' // Adjust to your Flutter version
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath 'com.google.gms:google-services:4.4.2' // Google Services plugin
+        classpath 'com.google.gms:google-services:4.4.3' // Google Services plugin //updated
     }
 }
 

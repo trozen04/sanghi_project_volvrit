@@ -86,7 +86,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                         title: 'Select Filter',
                         options: const ['Weight', 'Purity'],
                         sideOptionsMap: const {
-                          'Weight': ['<3g','3-5g', '5–7g', '7–10g', '10–12g', '12–15g', '15–17g', '17–20g', '20g'],
+                          'Weight': ['<3g','3-5g', '5–7g', '7–10g', '10–12g', '12–15g', '15–17g', '17–20g', '20g>'],
                           'Purity': ['18k', '20k', '22k', '24k'],
                         },
                         initiallySelected: selectedFilters,
