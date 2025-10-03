@@ -1,62 +1,78 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Prefs {
-  // Keys
+  static SharedPreferences? _prefs;
+
   static const String _keyIsLoggedIn = 'isLoggedIn';
   static const String _keyUserId = 'userId';
   static const String _keyUserToken = 'userToken';
   static const String _keyFcmToken = 'fcmToken';
+  static const String _keyUserName = 'userName';
+  static const String _keyUserEmail = 'userEmail';
 
-  // Save login status
-  static Future<void> setLoggedIn(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_keyIsLoggedIn, value);
+  static Future<void> init() async {
+    _prefs ??= await SharedPreferences.getInstance();
   }
 
-  // Get login status
-  static Future<bool> isLoggedIn() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_keyIsLoggedIn) ?? false; // default false
+  static Future<void> _ensureInitialized() async {
+    if (_prefs == null) {
+      await init();
+    }
   }
 
-  // Save userId
-  static Future<void> setUserId(String userId) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyUserId, userId);
+  static void setLoggedIn(bool value) {
+    _prefs!.setBool(_keyIsLoggedIn, value);
   }
 
-  // Get userId
-  static Future<String?> getUserId() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_keyUserId); // returns null if not set
+  static bool isLoggedIn() {
+    return _prefs?.getBool(_keyIsLoggedIn) ?? false;
   }
 
-  static Future<void> setUserToken(String userToken) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyUserToken, userToken);
+  static void setUserId(String userId) {
+    _prefs!.setString(_keyUserId, userId);
   }
 
-  // Get userId
-  static Future<String?> getUserToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_keyUserToken); // returns null if not set
+  static String getUserId() {
+    return _prefs!.getString(_keyUserId)!;
   }
 
-  // Save FCM token
+  static void setUserToken(String userToken) {
+    _prefs!.setString(_keyUserToken, userToken);
+  }
+
+  static String getUserToken() {
+    return _prefs!.getString(_keyUserToken)!;
+  }
+
+  static void setUserName(String name) {
+    _prefs!.setString(_keyUserName, name);
+  }
+
+  static String getUserName() {
+    return _prefs!.getString(_keyUserName)!;
+  }
+
+  static void setUserEmail(String email) {
+    _prefs!.setString(_keyUserEmail, email);
+  }
+
+  static String getUserEmail() {
+    return _prefs!.getString(_keyUserEmail)!;
+  }
+
   static Future<void> setFcmToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyFcmToken, token);
+    await _ensureInitialized();
+    await _prefs!.setString(_keyFcmToken, token);
   }
 
-  // Get FCM token
   static Future<String?> getFcmToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_keyFcmToken);
+    await _ensureInitialized();
+    return _prefs?.getString(_keyFcmToken); // safely nullable
   }
 
-  // Clear all preferences (optional)
+
   static Future<void> clearPrefs() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    await _ensureInitialized();
+    await _prefs!.clear();
   }
 }

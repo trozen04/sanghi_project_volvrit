@@ -5,7 +5,6 @@ import 'package:gold_project/Screens/BottomNavBar/DashboardScreen.dart';
 import 'package:gold_project/Screens/Detailspage/DetailsPage.dart';
 import 'package:gold_project/Screens/HomeScreens/CartPage/CartPage.dart';
 import 'package:gold_project/Screens/HomeScreens/Catalog/CategoryScreen.dart';
-import 'package:gold_project/Screens/HomeScreens/Home/HomeScreen.dart';
 import 'package:gold_project/Screens/MyOrders/MyOrderDetailsPage.dart';
 import 'package:gold_project/Screens/MyOrders/MyOrdersPage.dart';
 import 'package:gold_project/Screens/Notification/NotificationPage.dart';
@@ -13,10 +12,8 @@ import 'package:gold_project/Screens/Profile/EditProfilePage.dart';
 import 'package:gold_project/Screens/Profile/PersonalInfoPage.dart';
 
 class AppRoutes {
-  // ---------- Route names ----------
   static const String login = '/login';
   static const String register = '/register';
-  static const String home = '/home';
   static const String dashboard = '/dashboard';
   static const String category = '/categoryScreen';
   static const String details = '/details';
@@ -27,43 +24,37 @@ class AppRoutes {
   static const String myOrderDetailsPage = '/myOrderDetailsPage';
   static const String notificationPage = '/notificationPage';
 
-  // ---------- Central route generator ----------
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case login:
         return _buildPageRoute(const LoginScreen(), settings);
       case register:
         return _buildPageRoute(const RegisterScreen(), settings);
-      case home:
-        return _buildPageRoute(const HomeScreen(), settings);
       case dashboard:
         return _buildPageRoute(const DashboardScreen(), settings);
       case category:
         return _buildPageRoute(const CategoryScreen(), settings);
       case details:
-        return _buildPageRoute(DetailsPage(), settings);
+        final productId = settings.arguments as String;
+        return _buildPageRoute(DetailsPage(productId: productId), settings);
       case cartPage:
-        return _buildPageRoute(CartPage(), settings);
+        return _buildPageRoute(const CartPage(), settings);
       case personalInfoPage:
-        return _buildPageRoute(PersonalInfoPage(), settings);
+        return _buildPageRoute(const PersonalInfoPage(), settings);
       case editProfilePage:
-        return _buildPageRoute(EditProfilePage(profileData: {},), settings);
+        return _buildPageRoute(const EditProfilePage(profileData: {}), settings);
       case orderPage:
-        return _buildPageRoute(MyOrdersPage(), settings);
+        return _buildPageRoute(const MyOrdersPage(), settings);
       case myOrderDetailsPage:
-        return _buildPageRoute(MyOrderDetailsPage(), settings);
+        final orderId = settings.arguments as String;
+        return _buildPageRoute(MyOrderDetailsPage(orderId: orderId,), settings);
       case notificationPage:
-        return _buildPageRoute(NotificationPage(), settings);
-
+        return _buildPageRoute(const NotificationPage(), settings);
       default:
-        return _buildPageRoute(
-          HomeScreen(),
-          settings,
-        );
+        return _buildPageRoute(const DashboardScreen(), settings); // Changed to DashboardScreen
     }
   }
 
-  // ---------- Custom PageRoute with Fade + Slide ----------
   static PageRouteBuilder _buildPageRoute(Widget page, RouteSettings settings) {
     return PageRouteBuilder(
       settings: settings,
@@ -71,7 +62,6 @@ class AppRoutes {
       reverseTransitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (_, animation, secondaryAnimation) => page,
       transitionsBuilder: (_, animation, secondaryAnimation, child) {
-        // Slide from right + fade
         const beginOffset = Offset(1.0, 0.0);
         const endOffset = Offset.zero;
         final tween = Tween(begin: beginOffset, end: endOffset)

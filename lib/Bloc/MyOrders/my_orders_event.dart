@@ -5,8 +5,10 @@ sealed class MyOrdersEvent {}
 
 /// Fetch all orders (with optional status filter)
 final class FetchOrdersEventHandler extends MyOrdersEvent {
-  final String? status; // e.g., "Pending" or "Approved"
-  FetchOrdersEventHandler({this.status});
+  final String? action; // "pending" or "approved"
+  final int page;
+
+  FetchOrdersEventHandler({this.action, this.page = 1});
 }
 
 /// Fetch a single order’s details

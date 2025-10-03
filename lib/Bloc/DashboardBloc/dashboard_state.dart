@@ -16,22 +16,11 @@ final class GoldValueError extends DashboardState {
   GoldValueError(this.message);
 }
 
-// ----- CATEGORY LIST -----
-final class CategoryListLoading extends DashboardState {}
-final class CategoryListLoaded extends DashboardState {
-  final List<dynamic> categories;
-  CategoryListLoaded(this.categories);
-}
-final class CategoryListError extends DashboardState {
-  final String message;
-  CategoryListError(this.message);
-}
-
 // ----- PRODUCT LIST -----
 final class ProductListLoading extends DashboardState {}
 final class ProductListLoaded extends DashboardState {
-  final List<dynamic> products;
-  ProductListLoaded(this.products);
+  var responseData;
+  ProductListLoaded(this.responseData);
 }
 final class ProductListError extends DashboardState {
   final String message;
@@ -41,8 +30,8 @@ final class ProductListError extends DashboardState {
 // ----- CART PAGE -----
 final class CartPageLoading extends DashboardState {}
 final class CartPageLoaded extends DashboardState {
-  final Map<String, dynamic> cart;
-  CartPageLoaded(this.cart);
+  final cartData;
+  CartPageLoaded(this.cartData);
 }
 final class CartPageError extends DashboardState {
   final String message;
@@ -52,7 +41,7 @@ final class CartPageError extends DashboardState {
 // ----- ADD TO CART -----
 final class AddToCartLoading extends DashboardState {}
 final class AddToCartSuccess extends DashboardState {
-  final Map<String, dynamic> response;
+  final response;
   AddToCartSuccess(this.response);
 }
 final class AddToCartError extends DashboardState {
@@ -60,10 +49,41 @@ final class AddToCartError extends DashboardState {
   AddToCartError(this.message);
 }
 
+final class removeFromCartLoading extends DashboardState {}
+final class removeFromCartSuccess extends DashboardState {
+  final response;
+  removeFromCartSuccess(this.response);
+}
+final class removeFromCartError extends DashboardState {
+  final String message;
+  removeFromCartError(this.message);
+}
+
+//Add OR Remove From Cart
+final class AddOrRemoveFromCartLoading extends DashboardState {}
+final class AddOrRemoveCartSuccess extends DashboardState {
+  final response;
+  AddOrRemoveCartSuccess(this.response);
+}
+final class AddOrRemoveCartError extends DashboardState {
+  final String message;
+  AddOrRemoveCartError(this.message);
+}
+//Submit From Cart
+final class SubmitCartLoading extends DashboardState {}
+final class SubmitCartSuccess extends DashboardState {
+  final response;
+  SubmitCartSuccess(this.response);
+}
+final class SubmitCartError extends DashboardState {
+  final String message;
+  SubmitCartError(this.message);
+}
+
 // ----- PRODUCT DETAILS -----
 final class ProductDetailsLoading extends DashboardState {}
 final class ProductDetailsLoaded extends DashboardState {
-  final Map<String, dynamic> product;
+  final product;
   ProductDetailsLoaded(this.product);
 }
 final class ProductDetailsError extends DashboardState {

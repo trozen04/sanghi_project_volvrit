@@ -1,8 +1,13 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:gold_project/ShimmersAndAnimations/Animations.dart';
+import 'package:gold_project/Utils/ApiConstants.dart';
 import 'package:gold_project/Utils/AppColors.dart';
 import 'package:gold_project/Utils/FFontStyles.dart';
 import 'package:gold_project/Utils/ImageAssets.dart';
+import 'package:gold_project/Utils/date_utils.dart';
+import 'package:shimmer/shimmer.dart';
 
 /// Reusable widget for Purity/Weight row
 class CartInfoRow extends StatelessWidget {
@@ -175,7 +180,8 @@ class ImageStackWidget extends StatelessWidget {
   final double width;
   final Function(String) onImageTap;
 
-  const ImageStackWidget({super.key, 
+  const ImageStackWidget({
+    super.key,
     required this.currentImage,
     required this.additionalImages,
     required this.height,
@@ -183,8 +189,31 @@ class ImageStackWidget extends StatelessWidget {
     required this.onImageTap,
   });
 
+  Widget _buildNetworkImage(String url, {BoxFit fit = BoxFit.cover}) {
+    return Image.network(
+      ApiConstants.imageUrl + url,
+      fit: fit,
+      width: double.infinity,
+      height: double.infinity,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Container(
+          color: Colors.grey.shade200,
+          child: const Center(
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        );
+      },
+      errorBuilder: (_, __, ___) => Container(
+        color: Colors.grey.shade300,
+        child: const Icon(Icons.broken_image, color: Colors.grey),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    developer.log('imagees: $additionalImages \n $currentImage');
     return SizedBox(
       height: height * 0.3,
       width: double.infinity,
@@ -196,36 +225,41 @@ class ImageStackWidget extends StatelessWidget {
             height: height * 0.3,
             width: double.infinity,
             decoration: BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage(currentImage),
-                fit: BoxFit.cover,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: _buildNetworkImage(currentImage, fit: BoxFit.cover),
+          ),
+
+          // Thumbnails
+          if (additionalImages.isNotEmpty)
+            Positioned(
+              bottom: 10,
+              left: width * 0.15,
+              right: width * 0.15,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: additionalImages.map((image) {
+                  return GestureDetector(
+                    onTap: () => onImageTap(image),
+                    child: Container(
+                      height: width * 0.15,
+                      width: width * 0.15,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: AppColors.detailsImageBorder,
+                          width: 1,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: _buildNetworkImage(image, fit: BoxFit.cover),
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
             ),
-          ),
-          // Stacked Additional Images
-          Positioned(
-            bottom: 10,
-            left: width * 0.15,
-            right: width * 0.15,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: additionalImages.map((image) => GestureDetector(
-                onTap: () => onImageTap(image),
-                child: Container(
-                  height: width * 0.15,
-                  width: width * 0.15,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.detailsImageBorder, width: 1),
-                    borderRadius: BorderRadius.circular(8),
-                    image: DecorationImage(
-                      image: AssetImage(image),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-              )).toList(),
-            ),
-          ),
         ],
       ),
     );
@@ -237,17 +271,34 @@ class InfoRowWidget extends StatelessWidget {
   final String label;
   final String value;
   final bool? isLast;
+  final bool? isGst; // optional flag to indicate GST validation
 
-  const InfoRowWidget({super.key, 
+  const InfoRowWidget({
+    super.key,
     required this.label,
     required this.value,
     this.isLast = false,
+    this.isGst = false,
   });
+
+  // GST validation function
+  bool _isValidGst(String gst) {
+    final gstRegex = RegExp(
+        r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$');
+    return gstRegex.hasMatch(gst.toUpperCase());
+  }
 
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
     final height = mediaQuery.size.height;
+
+    String displayValue = value;
+
+    // Apply GST validation if needed
+    if (isGst == true && value.isNotEmpty) {
+      displayValue = _isValidGst(value) ? value : 'Invalid GST';
+    }
 
     return Container(
       padding: EdgeInsets.symmetric(vertical: height * 0.02),
@@ -262,7 +313,6 @@ class InfoRowWidget extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Label takes only as much as needed
           Flexible(
             flex: 2,
             child: Text(
@@ -271,22 +321,18 @@ class InfoRowWidget extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-
-          SizedBox(width: 8), // spacing
-
-          // Value takes remaining space
+          SizedBox(width: 8),
           Flexible(
             flex: 3,
             child: Text(
-              value,
+              displayValue,
               textAlign: TextAlign.end,
               style: FFontStyles.cartLabel(14),
               overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
-      )
-
+      ),
     );
   }
 }
@@ -297,7 +343,7 @@ class OrderCard extends StatelessWidget {
   final String date;
   final String status;
   final Color statusColor;
-  final List<String> images;
+  final List<String> images; // network image URLs
 
   const OrderCard({
     super.key,
@@ -312,6 +358,8 @@ class OrderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final double height = MediaQuery.of(context).size.height;
     final double width = MediaQuery.of(context).size.width;
+
+    final hasImages = images.isNotEmpty;
 
     return Container(
       padding: EdgeInsets.all(width * 0.04),
@@ -335,7 +383,7 @@ class OrderCard extends StatelessWidget {
                     width: height * 0.05,
                     height: height * 0.05,
                     decoration: BoxDecoration(
-                      color: status == "Pending"
+                      color: status.toLowerCase() == "pending"
                           ? AppColors.myOrdersPendingCheck.withOpacity(0.1)
                           : AppColors.myOrdersApproved.withOpacity(0.1),
                       shape: BoxShape.circle,
@@ -343,12 +391,12 @@ class OrderCard extends StatelessWidget {
                     child: Center(
                       child: Image.asset(
                         ImageAssets.checkIcon,
-                        color: status == "Pending"
+                        color: status.toLowerCase() == "pending"
                             ? AppColors.myOrdersPendingCheck
                             : AppColors.myOrdersApproved,
-                        width: height * 0.03, // adjust size as needed
+                        width: height * 0.03,
                         height: height * 0.03,
-                        fit: BoxFit.contain,   // ensures it fits inside without overflow
+                        fit: BoxFit.contain,
                       ),
                     ),
                   ),
@@ -390,32 +438,63 @@ class OrderCard extends StatelessWidget {
             ],
           ),
 
-          SizedBox(height: height * 0.02),
-          Divider(height: 0.7, color: AppColors.dividerMyOrdersCard),
-          SizedBox(height: height * 0.02),
+          if (hasImages) ...[
+            SizedBox(height: height * 0.02),
+            Divider(height: 0.7, color: AppColors.dividerMyOrdersCard),
+            SizedBox(height: height * 0.02),
 
-          // Images Row
-          Row(
-            children: images.map((img) {
-              return Padding(
-                padding: EdgeInsets.only(right: width * 0.03),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
-                    img,
-                    width: width * 0.18,
-                    height: height * 0.08,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
+            // Scrollable Images
+            SizedBox(
+              height: height * 0.1,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: images.length,
+                separatorBuilder: (_, __) => SizedBox(width: width * 0.03),
+                itemBuilder: (context, index) {
+                  final imgUrl = images[index].replaceAll("\\", "/");
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      ApiConstants.imageUrl + imgUrl,
+                      width: width * 0.18,
+                      height: height * 0.08,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return Shimmer.fromColors(
+                          baseColor: Colors.grey[300]!,
+                          highlightColor: Colors.grey[100]!,
+                          child: Container(
+                            width: width * 0.18,
+                            height: height * 0.08,
+                            color: Colors.white,
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: width * 0.18,
+                          height: height * 0.08,
+                          color: Colors.grey.shade200,
+                          child: const Icon(
+                            Icons.image_not_supported,
+                            color: Colors.grey,
+                            size: 40,
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 }
+
 
 //Order Details Page
 class OrderDetailsCard extends StatelessWidget {
@@ -488,79 +567,90 @@ class NotificationCard extends StatelessWidget {
   final String? description;
   final double height;
   final double width;
+  final bool isRead;
+  final VoidCallback? onTap;
+  final VoidCallback? onRemove;
 
-  const NotificationCard({super.key, 
+  const NotificationCard({
+    super.key,
     required this.title,
     required this.date,
     required this.time,
     this.description,
     required this.height,
     required this.width,
+    required this.isRead,
+    this.onTap,
+    this.onRemove,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(bottom: height * 0.02),
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.notificationCardBorderColor),
-        borderRadius: BorderRadius.circular(width * 0.02),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(width * 0.03),
-        child: StaggeredReveal(
-          initialDelay: const Duration(milliseconds: 80),
-          duration: const Duration(milliseconds: 900),
-          staggerFraction: 0.18,
-          children: [
-            // Animate title + icon
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Opacity(
+      opacity: isRead ? 0.7 : 1.0, // visual cue for read notifications
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          margin: EdgeInsets.only(bottom: height * 0.02),
+          decoration: BoxDecoration(
+            color: isRead ? Colors.white : Colors.blue.shade50,
+            border: Border.all(color: AppColors.notificationCardBorderColor),
+            borderRadius: BorderRadius.circular(width * 0.02),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(width * 0.03),
+            child: StaggeredReveal(
+              initialDelay: const Duration(milliseconds: 80),
+              duration: const Duration(milliseconds: 900),
+              staggerFraction: 0.18,
               children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: FFontStyles.notificationCardLabel(16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: FFontStyles.notificationCardLabel(16),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: onRemove,
+                      child: Image.asset(
+                        ImageAssets.closeIcon,
+                        width: width * 0.05,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: height * 0.005),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      formatNotificationDate(date),
+                      style: FFontStyles.notificationDate(12),
+                    ),
+                    Text(
+                      time,
+                      style: FFontStyles.notificationTime(10),
+                    ),
+                  ],
+                ),
+                if (description != null) ...[
+                  SizedBox(height: height * 0.01),
+                  Text(
+                    description!,
+                    style: FFontStyles.notificationTime(12),
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.close, size: width * 0.05),
-                  onPressed: () {},
-                ),
+                ],
               ],
             ),
-
-            SizedBox(height: height * 0.01),
-
-            // Animate date & time
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  date,
-                  style: FFontStyles.notificationDate(12),
-                ),
-                Text(
-                  time,
-                  style: FFontStyles.notificationTime(10),
-                ),
-              ],
-            ),
-
-            // Animate description if exists
-            if (description != null) ...[
-              SizedBox(height: height * 0.01),
-              Text(
-                description!,
-                style: FFontStyles.notificationTime(12),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
   }
 }
+

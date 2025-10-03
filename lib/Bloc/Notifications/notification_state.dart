@@ -8,7 +8,7 @@ final class NotificationInitial extends NotificationState {}
 /// ----- FETCH NOTIFICATIONS -----
 final class NotificationsLoading extends NotificationState {}
 final class NotificationsLoaded extends NotificationState {
-  final List<Map<String, dynamic>> notifications;
+  var notifications;
   NotificationsLoaded(this.notifications);
 }
 final class NotificationsError extends NotificationState {
@@ -25,4 +25,14 @@ final class NotificationMarked extends NotificationState {
 final class NotificationMarkError extends NotificationState {
   final String message;
   NotificationMarkError(this.message);
+}
+/// ----- Remove -----
+final class NotificationRemoveLoading extends NotificationState {}
+final class NotificationRemoveSuccess extends NotificationState {
+  final String notificationId;
+  NotificationRemoveSuccess({required this.notificationId});
+}
+final class NotificationRemoveError extends NotificationState {
+  final String message;
+  NotificationRemoveError(this.message);
 }

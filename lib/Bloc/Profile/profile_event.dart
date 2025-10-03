@@ -4,7 +4,10 @@ part of 'profile_bloc.dart';
 sealed class ProfileEvent {}
 
 /// Fetch the current user profile
-final class FetchProfileEventHandler extends ProfileEvent {}
+final class FetchProfileEventHandler extends ProfileEvent {
+  final String userToken;
+  FetchProfileEventHandler({required this.userToken});
+}
 
 /// Update user profile
 final class UpdateProfileEventHandler extends ProfileEvent {

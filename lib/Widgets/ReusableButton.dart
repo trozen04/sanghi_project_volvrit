@@ -29,7 +29,9 @@ class ReusableButton extends StatelessWidget {
         onTap: onPressed,
         borderRadius: BorderRadius.circular(isRounded == true ? 100 : 6),
         child: Container(
-          padding: EdgeInsets.symmetric(horizontal: width * 0.03, vertical: height * 0.015),
+          height: height * 0.055,
+          width: double.infinity,
+          // padding: EdgeInsets.symmetric(horizontal: width * 0.03, vertical: height * 0.015),
           decoration: BoxDecoration(
             color: color ?? AppColors.primary,
             borderRadius: BorderRadius.circular(isRounded == true ? 100 : 6),
@@ -37,7 +39,7 @@ class ReusableButton extends StatelessWidget {
           child: Center(
             child: isLoading!
                 ? SizedBox(
-              height: 35,
+              height: 40,
                 child: CircularProgressIndicator())
             : Text(
               text,

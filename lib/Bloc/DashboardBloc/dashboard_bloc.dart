@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:bloc/bloc.dart';
 import 'package:gold_project/Utils/ApiConstants.dart';
+import 'package:gold_project/Utils/PrefUtils.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'dart:developer' as developer;
@@ -14,23 +15,17 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     on<FetchGoldValueEventHandler>((event, emit) async {
       emit(GoldValueLoading());
       try {
-        // body (example optional params)
-        // final body = {
-        //   'currency': 'INR',
-        //   'date': null,
-        // };
-        // final params = _filterNulls(body);
-
         final url = ApiConstants.baseUrl + ApiConstants.goldPrice;
-        developer.log('url: $url');
 
         final res = await http.get(
-         // Uri.parse(ApiConstants.baseUrl).replace(queryParameters: params),
           Uri.parse(url),
+          headers: {
+            'Authorization': 'Bearer ${Prefs.getUserToken() ?? ''}',
+            'Accept': 'application/json',
+          },
         );
         final responseData = jsonDecode(res.body);
-        developer.log('data: $responseData');
-        if (res.statusCode == 200) {
+        if (res.statusCode == 200 || res.statusCode == 201) {
           final data = responseData['data'];
           emit(GoldValueLoaded(data));
         } else {
@@ -43,71 +38,67 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
 
     // ---------------- CATEGORY LIST ----------------
     on<FetchCategoryListEventHandler>((event, emit) async {
-      emit(CategoryListLoading());
-      try {
-        final body = {
-          'parent_id': 10,
-          'lang': '',
-        };
-        final params = _filterNulls(body);
-
-        final res = await http.get(
-          Uri.parse(ApiConstants.baseUrl).replace(queryParameters: params),
-        );
-
-        final data = jsonDecode(res.body);
-        if (res.statusCode == 200) {
-          emit(CategoryListLoaded(data['categories']));
-        } else {
-          emit(CategoryListError(data['message'] ?? 'Failed to load categories'));
-        }
-      } catch (e) {
-        emit(CategoryListError(e.toString()));
-      }
-    });
-
-    // ---------------- PRODUCT LIST ----------------
-    on<FetchProductListEventHandler>((event, emit) async {
       emit(ProductListLoading());
       try {
+
+        final token = 'Bearer ${event.token ?? Prefs.getUserToken()}';
+
         final body = {
-          'category_id': 5,
-          'sort': 'latest',
-          'min_price': null,
+          'categoryname': event.categoryName,
+          'subcategoryname': event.subCategoryName,
+          'page': event.page,
+          'minWeight': event.minWeight,
+          'maxWeight': event.maxWeight,
+          'purity': event.purity,
         };
         final params = _filterNulls(body);
+        //developer.log('param: $params');
+
+        final uri = Uri.parse(ApiConstants.baseUrl + ApiConstants.productList)
+            .replace(queryParameters: params);
+       // developer.log('Full URL: ${uri.toString()}');
+
 
         final res = await http.get(
-          Uri.parse(ApiConstants.baseUrl).replace(queryParameters: params),
+          uri,
+          headers: {
+            if (token.isNotEmpty) 'Authorization': token,
+            'Accept': 'application/json',
+          },
         );
 
         final data = jsonDecode(res.body);
-        if (res.statusCode == 200) {
-          emit(ProductListLoaded(data['products']));
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          emit(ProductListLoaded(data));
         } else {
           emit(ProductListError(data['message'] ?? 'Failed to load products'));
         }
       } catch (e) {
-        emit(ProductListError(e.toString()));
+        emit(ProductListError('Something went wrong. Please try again later.'));
       }
     });
+
 
     // ---------------- CART PAGE ----------------
     on<FetchCartPageEventHandler>((event, emit) async {
       emit(CartPageLoading());
       try {
-        final body = {
-          'user_id': 123,
-          'include_promotions': true,
-        };
-        final params = _filterNulls(body);
+
+        final userId = Prefs.getUserId() ?? '';
+        final url = '${ApiConstants.baseUrl}${ApiConstants.myCart}$userId';
+        developer.log('cart url: ${url}');
 
         final res = await http.get(
-          Uri.parse(ApiConstants.baseUrl).replace(queryParameters: params),
+            Uri.parse(url),
+          headers: {
+            'Authorization': 'Bearer ${Prefs.getUserToken() ?? ''}',
+            'Accept': 'application/json',
+          },
         );
+        developer.log('cart Items: ${res.body}');
 
         final data = jsonDecode(res.body);
-        if (res.statusCode == 200) {
+        if (res.statusCode == 200 || res.statusCode == 201) {
           emit(CartPageLoaded(data));
         } else {
           emit(CartPageError(data['message'] ?? 'Failed to load cart'));
@@ -122,21 +113,25 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       emit(AddToCartLoading());
       try {
         final body = {
-          'product_id': event.productId,
+          'userId' : Prefs.getUserId(),
+          'productId': event.productId,
           'quantity': event.quantity,
-          // 'note': 'Gift wrap',       // example optional
-          // 'special_request': null,   // removed if null/empty
         };
-        final filteredBody = _filterNulls(body);
+        developer.log('Add to cart url: ${ApiConstants.baseUrl + ApiConstants.addToCart}');
+        developer.log('Add to cart body: $body');
 
         final res = await http.post(
-          Uri.parse(ApiConstants.baseUrl),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode(filteredBody),
+          Uri.parse(ApiConstants.baseUrl + ApiConstants.addToCart),
+          headers: {
+            'Authorization': 'Bearer ${Prefs.getUserToken() ?? ''}',
+            'Content-Type': 'application/json'
+          },
+          body: jsonEncode(body),
         );
 
+        developer.log('Add to cart Response: ${res.body}');
         final data = jsonDecode(res.body);
-        if (res.statusCode == 200) {
+        if (res.statusCode == 200 || res.statusCode == 201) {
           emit(AddToCartSuccess(data));
         } else {
           emit(AddToCartError(data['message'] ?? 'Failed to add to cart'));
@@ -146,42 +141,134 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       }
     });
 
+    // ---------------- Remove From CART ----------------
+    on<RemoveFromCartEventHandler>((event, emit) async {
+      emit(removeFromCartLoading());
+      try {
+        final body = {
+          'userId' : Prefs.getUserId(),
+          'productId': event.productId,
+        };
+        developer.log('RemoveFromCartEventHandler url: ${ApiConstants.baseUrl + ApiConstants.removeFromCart}');
+        developer.log('RemoveFromCartEventHandler body: $body');
+
+        final res = await http.delete(
+          Uri.parse(ApiConstants.baseUrl + ApiConstants.removeFromCart),
+          headers: {
+            'Authorization': 'Bearer ${Prefs.getUserToken() ?? ''}',
+            'Content-Type': 'application/json'
+          },
+          body: jsonEncode(body),
+        );
+
+        developer.log('RemoveFromCartEventHandler Response: ${res.body}');
+        final data = jsonDecode(res.body);
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          emit(removeFromCartSuccess(data));
+        } else {
+          emit(removeFromCartError(data['message'] ?? 'Failed to add to cart'));
+        }
+      } catch (e) {
+        emit(removeFromCartError('Something went wrong. Please try again later.'));
+      }
+    });
+
+    // ---------------- Add or Remove From CART ----------------
+    on<AddOrRemoveCartEventHandler>((event, emit) async {
+      emit(removeFromCartLoading());
+      try {
+        final body = {
+          'userId' : Prefs.getUserId(),
+          'productId': event.productId,
+          'action': event.action,
+        };
+        developer.log('AddOrRemoveCartEventHandler url: ${ApiConstants.baseUrl + ApiConstants.addOrRemoveCart}');
+        developer.log('AddOrRemoveCartEventHandler body: $body');
+
+        final res = await http.put(
+          Uri.parse(ApiConstants.baseUrl + ApiConstants.addOrRemoveCart),
+          headers: {
+            'Authorization': 'Bearer ${Prefs.getUserToken() ?? ''}',
+            'Content-Type': 'application/json'
+          },
+          body: jsonEncode(body),
+        );
+
+        developer.log('AddOrRemoveCartEventHandler Response: ${res.body}');
+        final data = jsonDecode(res.body);
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          emit(AddOrRemoveCartSuccess(data));
+        } else {
+          emit(AddOrRemoveCartError(data['message'] ?? 'Failed to add to cart'));
+        }
+      } catch (e) {
+        emit(AddOrRemoveCartError('Something went wrong. Please try again later.'));
+      }
+    });
+
+    // ---------------- Submit CART ----------------
+    on<SubmitCartEventHandler>((event, emit) async {
+      emit(SubmitCartLoading());
+      try {
+
+        String url = ApiConstants.baseUrl + ApiConstants.submitCart;
+
+        print('submit cart url: $url');
+        final res = await http.post(
+          Uri.parse(url),
+          headers: {
+            'Authorization': 'Bearer ${Prefs.getUserToken() ?? ''}',
+            'Content-Type': 'application/json'
+          },
+        );
+
+        developer.log('SubmitCart Response: ${res.body}');
+        final data = jsonDecode(res.body);
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          developer.log('SubmitCart data: ${data}');
+          emit(SubmitCartSuccess(data));
+        } else {
+          emit(SubmitCartError(data['message'] ?? 'Failed to add to cart'));
+        }
+      } catch (e) {
+        emit(SubmitCartError('Something went wrong. Please try again later.'));
+      }
+    });
+
     // ---------------- PRODUCT DETAILS ----------------
     on<FetchProductDetailsEventHandler>((event, emit) async {
       emit(ProductDetailsLoading());
       try {
-        // body (example optional params)
-        final body = {
-          'product_id': event.productId,
-          // 'include_reviews': true,
-          // 'lang': '',
-        };
-        final params = _filterNulls(body);
-
+        String url = ApiConstants.baseUrl + ApiConstants.productDetails + event.productId;
+        developer.log('url: $url');
         final res = await http.get(
-          Uri.parse(ApiConstants.baseUrl)
-              .replace(queryParameters: params),
+          Uri.parse(url),
+          headers: {
+            'Authorization': 'Bearer ${Prefs.getUserToken() ?? ''}',
+            'Accept': 'application/json',
+          },
         );
 
         final data = jsonDecode(res.body);
-        if (res.statusCode == 200) {
-          emit(ProductDetailsLoaded(data));
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          emit(ProductDetailsLoaded(data['product']));
         } else {
           emit(ProductDetailsError(data['message'] ?? 'Failed to load details'));
         }
       } catch (e) {
-        emit(ProductDetailsError(e.toString()));
+        developer.log(e.toString());
+        emit(ProductDetailsError('Something went wrong. Please try again later.'));
       }
     });
 
   }
 
   /// Helper to remove null or empty-string values
-  Map<String, dynamic> _filterNulls(Map<String, dynamic> body) {
-    final filtered = <String, dynamic>{};
+  Map<String, String> _filterNulls(Map<String, dynamic> body) {
+    final filtered = <String, String>{};
     body.forEach((k, v) {
-      if (v != null && (v is! String || v.trim().isNotEmpty)) {
-        filtered[k] = v;
+      if (v != null) {
+        filtered[k] = v.toString();
       }
     });
     return filtered;

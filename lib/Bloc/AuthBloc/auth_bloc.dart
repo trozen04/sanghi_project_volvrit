@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'package:gold_project/Routes/app_routes.dart';
 import 'package:http/http.dart' as http;
 import 'package:bloc/bloc.dart';
@@ -16,18 +17,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(LoginLoading());
       try {
         final url = ApiConstants.baseUrl + ApiConstants.login;
+        developer.log('url login: ${url}');
 
         final response = await http.post(
           Uri.parse(url),
-          headers: {'Content-Type': 'application/json'},
+          // headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
             'email': event.email,
             'password': event.password,
           }),
         );
+        developer.log('response login: ${response.body}');
 
         final data = jsonDecode(response.body);
-        if (response.statusCode == 200) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
           emit(LoginSuccess(response: data));
         } else {
           emit(LoginError(message: data['message'] ?? 'Login failed'));

@@ -11,9 +11,8 @@ import 'package:gold_project/Widgets/custom_textfield.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class EditProfilePage extends StatefulWidget {
-  final Map<String, dynamic> profileData;
-
-  const EditProfilePage({super.key, required this.profileData});
+  final profileData;
+  const EditProfilePage({super.key, this.profileData});
 
   @override
   _EditProfilePageState createState() => _EditProfilePageState();
@@ -43,12 +42,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     final profileData = widget.profileData;
 
-    _name = TextEditingController(text: profileData['personalName'] ?? '');
-    _phone = TextEditingController(text: profileData['phone'] ?? '');
+    _name = TextEditingController(text: profileData['personname'] ?? '');
+    _phone = TextEditingController(text: profileData['phoneno'] ?? '');
     _businessName =
-        TextEditingController(text: profileData['businessName'] ?? '');
-    _gst = TextEditingController(text: profileData['gstNumber'] ?? '');
-    _address = TextEditingController(text: profileData['businessAddr'] ?? '');
+        TextEditingController(text: profileData['bussinessname'] ?? '');
+    _gst = TextEditingController(text: profileData['gstno'] ?? '');
+    _address = TextEditingController(text: profileData['bussinessaddress'] ?? '');
     _email = TextEditingController(text: profileData['email'] ?? '');
   }
 
@@ -107,125 +106,133 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        resizeToAvoidBottomInset: false,
         backgroundColor: AppColors.background,
         appBar: CustomAppBar(title: 'Edit Profile'),
-        body: BlocProvider(
-          create: (_) => ProfileBloc(),
-          child: BlocListener<ProfileBloc, ProfileState>(
-            listener: (context, state) {
-              if (state is ProfileLoading) {
-                setState(() => isLoading = true);
-              } else {
-                setState(() => isLoading = false);
-              }
+        body: BlocListener<ProfileBloc, ProfileState>(
+          listener: (context, state) {
+            if (state is ProfileLoading) {
+              print('ProfileLoading');
 
-              if (state is ProfileUpdated) {
-                TopSnackbar.show(
-                  context,
-                  message: 'Profile updated successfully',
-                  isError: false,
-                );
-                Navigator.pop(context, true); // return updated flag if needed
-              } else if (state is ProfileError) {
-                TopSnackbar.show(
-                  context,
-                  message: state.message,
-                  isError: true,
-                );
-              }
-            },
-            child: isLoading
-                ? EditProfilePageShimmer()
-                : SingleChildScrollView(
-              child: Container(
-                width: width,
-                padding: EdgeInsets.symmetric(
-                    horizontal: width * 0.04, vertical: height * 0.03),
-                decoration: const BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30),
-                  ),
+              setState(() => isLoading = true);
+            } else {
+              setState(() => isLoading = false);
+            }
+
+            if (state is ProfileUpdated) {
+              print('progfile updated: ${state.message}');
+              TopSnackbar.show(
+                context,
+                message: state.message,
+                isError: false,
+              );
+              Navigator.pop(context, true);
+            } else if (state is ProfileError) {
+              print('ProfileError');
+
+              TopSnackbar.show(
+                context,
+                message: state.message,
+                isError: true,
+              );
+            }
+          },
+          child: isLoading
+              ? EditProfilePageShimmer()
+              : SingleChildScrollView(
+            child: Container(
+              width: width,
+              padding: EdgeInsets.symmetric(
+                  horizontal: width * 0.04, vertical: height * 0.03),
+              decoration: const BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(30),
+                  topRight: Radius.circular(30),
                 ),
-                child: Form(
-                  key: _formKey,
-                  child: StaggeredReveal(
-                    initialDelay: const Duration(milliseconds: 100),
-                    duration: const Duration(milliseconds: 300),
-                    staggerFraction: 0.18,
-                    children: [
-                      Text('Business Name',
-                          style: FFontStyles.emailLabel(16)),
-                      SizedBox(height: height * 0.005),
-                      CustomTextField(
-                        controller: _businessName,
-                        hint: 'Enter your business name',
-                        errorText: _businessNameError
-                            ? 'Business name cannot be empty'
-                            : null,
-                        onChanged: (_) =>
-                            setState(() => _businessNameError = false),
-                      ),
-                      SizedBox(height: height * 0.02),
-                      Text('Person Name', style: FFontStyles.emailLabel(16)),
-                      SizedBox(height: height * 0.005),
-                      CustomTextField(
-                        controller: _name,
-                        hint: 'Enter your name',
-                        errorText:
-                        _nameError ? 'Name cannot be empty' : null,
-                        onChanged: (_) =>
-                            setState(() => _nameError = false),
-                      ),
-                      Text('Email', style: FFontStyles.emailLabel(16)),
-                      SizedBox(height: height * 0.005),
-                      CustomTextField(
-                        controller: _email,
-                        keyboardType: TextInputType.emailAddress,
-                        hint: 'Enter your email',
-                        errorText: _emailError
-                            ? 'Enter a valid email address'
-                            : null,
-                        onChanged: (_) => setState(() => _emailError = false),
-                      ),
-                      Text('Phone Number', style: FFontStyles.emailLabel(16)),
-                      SizedBox(height: height * 0.005),
-                      CustomTextField(
-                        controller: _phone,
-                        keyboardType: TextInputType.phone,
-                        hint: 'Enter your phone number',
-                        errorText: _phoneError
-                            ? 'Phone number must be at least 10 digits'
-                            : null,
-                        onChanged: (_) => setState(() => _phoneError = false),
-                      ),
-                      Text('GST Number (Optional)',
-                          style: FFontStyles.emailLabel(16)),
-                      SizedBox(height: height * 0.005),
-                      CustomTextField(
-                        controller: _gst,
-                        hint: 'Enter your GST number',
-                      ),
-                      Text('Business Address', style: FFontStyles.emailLabel(16)),
-                      SizedBox(height: height * 0.005),
-                      CustomTextField(
-                        controller: _address,
-                        hint: 'Enter your business address',
-                        errorText: _addressError
-                            ? 'Address cannot be empty'
-                            : null,
-                        onChanged: (_) => setState(() => _addressError = false),
-                      ),
-                      SizedBox(height: height * 0.05),
-                      ReusableButton(
-                        text: 'Submit',
-                        onPressed: () => _onSave(context),
-                        width: width,
-                      ),
-                    ],
-                  ),
+              ),
+              child: Form(
+                key: _formKey,
+                child: StaggeredReveal(
+                  initialDelay: const Duration(milliseconds: 100),
+                  duration: const Duration(milliseconds: 300),
+                  staggerFraction: 0.18,
+                  children: [
+                    Text('Business Name',
+                        style: FFontStyles.emailLabel(16)),
+                    SizedBox(height: height * 0.005),
+                    CustomTextField(
+                      controller: _businessName,
+                      hint: 'Enter your business name',
+                      errorText: _businessNameError
+                          ? 'Business name cannot be empty'
+                          : null,
+                      onChanged: (_) =>
+                          setState(() => _businessNameError = false),
+                    ),
+                    SizedBox(height: height * 0.02),
+                    Text('Person Name', style: FFontStyles.emailLabel(16)),
+                    SizedBox(height: height * 0.005),
+                    CustomTextField(
+                      textCapitalization: TextCapitalization.words,
+                      controller: _name,
+                      hint: 'Enter your name',
+                      errorText:
+                      _nameError ? 'Name cannot be empty' : null,
+                      onChanged: (_) =>
+                          setState(() => _nameError = false),
+
+                    ),
+                    SizedBox(height: height * 0.02),
+                    Text('Email', style: FFontStyles.emailLabel(16)),
+                    SizedBox(height: height * 0.005),
+                    CustomTextField(
+                      controller: _email,
+                      keyboardType: TextInputType.emailAddress,
+                      hint: 'Enter your email',
+                      errorText: _emailError
+                          ? 'Enter a valid email address'
+                          : null,
+                      onChanged: (_) => setState(() => _emailError = false),
+                    ),
+                    SizedBox(height: height * 0.02),
+                    Text('Phone Number', style: FFontStyles.emailLabel(16)),
+                    SizedBox(height: height * 0.005),
+                    CustomTextField(
+                      controller: _phone,
+                      keyboardType: TextInputType.phone,
+                      hint: 'Enter your phone number',
+                      errorText: _phoneError
+                          ? 'Phone number must be at least 10 digits'
+                          : null,
+                      onChanged: (_) => setState(() => _phoneError = false),
+                    ),
+                    SizedBox(height: height * 0.02),
+                    Text('GST Number (Optional)',
+                        style: FFontStyles.emailLabel(16)),
+                    SizedBox(height: height * 0.005),
+                    CustomTextField(
+                      controller: _gst,
+                      hint: 'Enter your GST number',
+                    ),
+                    SizedBox(height: height * 0.02),
+                    Text('Business Address', style: FFontStyles.emailLabel(16)),
+                    SizedBox(height: height * 0.005),
+                    CustomTextField(
+                      controller: _address,
+                      hint: 'Enter your business address',
+                      errorText: _addressError
+                          ? 'Address cannot be empty'
+                          : null,
+                      onChanged: (_) => setState(() => _addressError = false),
+                    ),
+                    SizedBox(height: height * 0.05),
+                    ReusableButton(
+                      text: 'Submit',
+                      onPressed: () => _onSave(context),
+                      width: width,
+                        isLoading: isLoading,
+                    ),
+                  ],
                 ),
               ),
             ),

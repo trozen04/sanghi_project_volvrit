@@ -26,13 +26,13 @@ class ProfilePage extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  'Rohit sharma',
+                  Prefs.getUserName() ?? '',
                   style: FFontStyles.titleText(22),
                   overflow: TextOverflow.ellipsis,
                 ),
                 SizedBox(height: height * 0.01),
                 Text(
-                  'rohitsharma12@gmail.com',
+                  Prefs.getUserEmail() ?? '',
                   style: FFontStyles.cartLabel(16),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -86,7 +86,7 @@ class ProfilePage extends StatelessWidget {
                       // Handle user response
                       if (confirm) {
                         // User confirmed
-                        await Prefs.clearPrefs(); // clear shared preferences
+                        Prefs.clearPrefs(); // clear shared preferences
                         // Navigate to login screen or another screen
                         Navigator.pushReplacementNamed(context, '/login');
                       }

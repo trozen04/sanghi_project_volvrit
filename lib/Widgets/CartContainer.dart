@@ -3,6 +3,7 @@ import 'package:gold_project/Utils/AppColors.dart';
 import 'package:gold_project/Utils/FFontStyles.dart';
 import 'package:gold_project/Utils/ImageAssets.dart';
 import 'package:gold_project/Widgets/OtherReusableWidgets.dart';
+import 'package:shimmer/shimmer.dart';
 
 class CartContainer extends StatelessWidget {
   final double width;
@@ -46,13 +47,37 @@ class CartContainer extends StatelessWidget {
               height: height * 0.1,
               width: width * 0.23,
               decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage(imagePath),
-                  fit: BoxFit.cover,
-                ),
                 borderRadius: BorderRadius.circular(8),
               ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  imagePath,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    // shimmer while loading
+                    return Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Container(color: Colors.white),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    // subtle placeholder if image fails
+                    return Container(
+                      color: Colors.grey.shade200,
+                      child: const Icon(
+                        Icons.image_not_supported,
+                        color: Colors.grey,
+                        size: 30,
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
+
             SizedBox(width: width * 0.04),
 
             Expanded(

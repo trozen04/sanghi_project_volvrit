@@ -18,18 +18,24 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         final userId = await Prefs.getUserId();
 
         // Build URL
-        final url = '${ApiConstants.baseUrl}${ApiConstants.getProfile}/$userId';
-        developer.log('url: $url');
+        final url = '${ApiConstants.baseUrl}${ApiConstants.getProfile}$userId';
+        developer.log('FetchProfileEventHandler url: $url');
 
         // Make GET request
-        final res = await http.get(Uri.parse(url));
-        developer.log('body: ${res.body}');
+        final res = await http.get(
+            Uri.parse(url),
+          headers: {
+            'Authorization': 'Bearer ${event.userToken}',
+            'Accept': 'application/json',
+          },
+        );
 
         final responseData = jsonDecode(res.body);
 
-        if (res.statusCode == 200) {
-          final data = responseData['data'];
-          developer.log('responseData: $data');
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          final data = responseData['user'];
+          Prefs.setUserName(data['personname']);
+          Prefs.setUserEmail(data['email']);
           emit(ProfileLoaded(data));
         } else {
           emit(ProfileError(responseData['message'] ?? 'Failed to load profile'));
@@ -44,28 +50,32 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       try {
         String? userId = await Prefs.getUserId();
         final body = {
-          'personalName': event.name,
-          'phone': event.phone,
-          'businessName': event.businessName,
-          'gstNumber': event.gst?.isNotEmpty == true ? event.gst : null, // null if empty
-          'businessAddr': event.address,
-          //'email': event.email,
+          'bussinessname': event.businessName,
+          'personname': event.name,
+          'gstno': event.gst?.isNotEmpty == true ? event.gst : null,
+          'bussinessaddress': event.address,
         };
-        //..removeWhere((key, value) => value == null || value.toString().trim().isEmpty);
 
-        final url = '${ApiConstants.baseUrl}${ApiConstants.updateProfile}/$userId';
+        final url = '${ApiConstants.baseUrl}${ApiConstants.updateProfile}';
         developer.log('url: $url, body: $body');
 
-        final res = await http.put(
+        final res = await http.patch(
           Uri.parse(url),
+          headers: {
+            'Authorization': 'Bearer ${Prefs.getUserToken() ?? ''}',
+            'Accept': 'application/json',
+          },
           body: body,
         );
 
         final responseData = jsonDecode(res.body);
         developer.log('data: $responseData');
+        developer.log('statusCode: ${res.statusCode}');
 
-        if (res.statusCode == 200) {
-          emit(ProfileUpdated(responseData));
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          developer.log('responseData[message]: ${responseData['message']}');
+
+          emit(ProfileUpdated(responseData['message']));
         } else {
           emit(ProfileUpdateError(responseData['message'] ?? 'Failed to update profile'));
         }

@@ -19,8 +19,8 @@ final class ProfileError extends ProfileState {
 /// ----- UPDATE -----
 final class ProfileUpdating extends ProfileState {}
 final class ProfileUpdated extends ProfileState {
-  final Map<String, dynamic> profile;
-  ProfileUpdated(this.profile);
+  final String message;
+  ProfileUpdated(this.message);
 }
 final class ProfileUpdateError extends ProfileState {
   final String message;

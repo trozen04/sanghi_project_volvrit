@@ -1,15 +1,24 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gold_project/Bloc/DashboardBloc/dashboard_bloc.dart';
 import 'package:gold_project/ShimmersAndAnimations/Animations.dart';
 import 'package:gold_project/Routes/app_routes.dart';
 import 'package:gold_project/ShimmersAndAnimations/Shimmers.dart';
+import 'package:gold_project/Utils/ApiConstants.dart';
 import 'package:gold_project/Utils/AppColors.dart';
 import 'package:gold_project/Utils/FFontStyles.dart';
 import 'package:gold_project/Utils/ImageAssets.dart';
 import 'package:gold_project/Widgets/AppBar/CustomAppBar.dart';
 import 'package:gold_project/Widgets/OtherReusableWidgets.dart';
+import 'package:gold_project/Widgets/TopSnackbar.dart';
+
+import '../../Utils/PrefUtils.dart';
 
 class DetailsPage extends StatefulWidget {
-  const DetailsPage({super.key});
+  final String productId;
+  const DetailsPage({super.key, required this.productId});
 
 
   @override
@@ -19,24 +28,30 @@ class DetailsPage extends StatefulWidget {
 
 class _DetailsPageState extends State<DetailsPage> {
   int _quantity = 0;
-  String _currentImage = ImageAssets.ringDetails; // Default main image
+  String? _currentImage; // can be null until product loads
   bool isLoading = false;
+  Map<String, dynamic>? product; // product data from API
+
+  @override
+  void initState() {
+    super.initState();
+    developer.log('token: ${Prefs.getUserToken()}');
+    context.read<DashboardBloc>().add(
+      FetchProductDetailsEventHandler(productId: widget.productId),
+    );
+  }
+
   void _addToCart() {
-    setState(() {
-      _quantity = 1;
-    });
+    context.read<DashboardBloc>().add(AddToCartEventHandler(productId: widget.productId));
   }
 
   void _increment() {
-    setState(() {
-      _quantity++;
-    });
+    context.read<DashboardBloc>().add(AddOrRemoveCartEventHandler(productId: widget.productId, action: 'increase'));
   }
 
   void _decrement() {
-    setState(() {
-      if (_quantity > 0) _quantity--;
-    });
+    //context.read<DashboardBloc>().add(RemoveFromCartEventHandler(productId: widget.productId));
+    context.read<DashboardBloc>().add(AddOrRemoveCartEventHandler(productId: widget.productId, action: 'decrease'));
   }
 
   void _changeMainImage(String newImage) {
@@ -51,88 +66,181 @@ class _DetailsPageState extends State<DetailsPage> {
     final height = mediaQuery.size.height;
     final width = mediaQuery.size.width;
 
-    final additionalImages = [
-      ImageAssets.ringDetails,
-      ImageAssets.ringImage1,
-      ImageAssets.ringImage2
-    ];
+    final productImages = (product?['images'] as List<dynamic>?)
+        ?.map((img) => img.toString())
+        .toList() ??
+        [];
+
+    final stock = product?['stock'] ?? 0;
+    final productName = product?['productname'] ?? "Unknown Product";
+    final weight = product?['weight'] ?? "-";
+    final purity = product?['purity'] ?? "-";
+    final description =
+        product?['description'] ?? "No description available.";
 
     return Scaffold(
       appBar: CustomAppBar(title: 'Details'),
-      body: isLoading
-          ? DetailsPageShimmer()
-          : SingleChildScrollView(
-        child: StaggeredReveal(
-          initialDelay: const Duration(milliseconds: 80),
-          duration: const Duration(milliseconds: 900),
-          staggerFraction: 0.18,
-          children: [
-            // Image Stack Widget
-            ImageStackWidget(
-              currentImage: _currentImage,
-              additionalImages: additionalImages,
-              height: height,
-              width: width,
-              onImageTap: _changeMainImage,
-            ),
-            // Product Details
-            Padding(
-              padding: EdgeInsets.all(width * 0.04),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Regal Floral Gold Ring',
-                        style: FFontStyles.customAppBarTitleText(20),
-                      ),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: width * 0.03, vertical: height * 0.005),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          '2 Stock Left',
-                          style: FFontStyles.stockLeft(14),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: height * 0.01),
-                  Text(
-                    'ornate floral filigree and lattice details dazzle in this 18 karat yellow gold finger ring, blending traditional artistry with modern elegance.',
-                    style: FFontStyles.cartLabel(14),
-                  ),
-                  SizedBox(height: height * 0.02),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: width * 0.04, vertical: height * 0.03),
-                    decoration: BoxDecoration(
-                      color: AppColors.detailsCardBG,
-                      border: Border.all(
-                        color: AppColors.detailsCardBorder
-                      ),
-                      borderRadius: BorderRadius.circular(10)
-                    ),
-                    child: Column(
+      body: MultiBlocListener(
+        listeners: [
+          // Product Details
+          BlocListener<DashboardBloc, DashboardState>(
+            listener: (context, state) {
+              if (state is ProductDetailsLoading) {
+                setState(() => isLoading = true);
+              } else if (state is ProductDetailsLoaded) {
+                developer.log('ProductDetailsLoaded: ${state.product}');
+                setState(() {
+                  product = state.product;
+                  isLoading = false;
+                  final imgs = (product?['images'] as List<dynamic>?);
+                  _currentImage =
+                  imgs != null && imgs.isNotEmpty ? imgs.first : null;
+                });
+              } else if (state is ProductDetailsError) {
+                setState(() => isLoading = false);
+                TopSnackbar.show(context, message: state.message, isError: true);
+              }
+
+            },
+          ),
+
+          // Add to cart listener
+          BlocListener<DashboardBloc, DashboardState>(
+            listener: (context, state) {
+              if (state is AddToCartSuccess) {
+                var responseData = state.response;
+                var cartData = responseData['cart'];
+                developer.log('AddToCartSuccess: $cartData');
+
+                setState(() {
+                  _quantity = (cartData['items'] != null && cartData['items'].isNotEmpty)
+                      ? cartData['items'][0]['quantity'] ?? 0
+                      : 0;
+                  developer.log('_quantity: $_quantity');
+
+                });
+                TopSnackbar.show(context, message: "Item added to cart");
+              } else if (state is AddToCartError) {
+                TopSnackbar.show(context, message: state.message);
+              }
+            },
+          ),
+
+          // Remove from cart listener
+          BlocListener<DashboardBloc, DashboardState>(
+            listener: (context, state) {
+              //Updated Cart
+              if(state is AddOrRemoveCartSuccess) {
+                var responseData = state.response;
+                var cartData = responseData['cart'];
+                developer.log('AddOrRemoveCartSuccess responseData: ${responseData}');
+                setState(() {
+                  _quantity = (cartData['items'] != null && cartData['items'].isNotEmpty)
+                      ? cartData['items'][0]['quantity'] ?? 0
+                      : 0;
+                });
+
+              }
+            },
+          ),
+        ],
+        child: isLoading
+            ? DetailsPageShimmer()
+            : product == null
+            ? Center(child: Text("No product found"))
+            : SingleChildScrollView(
+          child: StaggeredReveal(
+            initialDelay: const Duration(milliseconds: 80),
+            duration: const Duration(milliseconds: 900),
+            staggerFraction: 0.18,
+            children: [
+              // Image Stack
+              ImageStackWidget(
+                currentImage: _currentImage ?? '',
+                additionalImages: productImages,
+                height: height,
+                width: width,
+                onImageTap: _changeMainImage,
+              ),
+
+              // Product Details
+              Padding(
+                padding: EdgeInsets.all(width * 0.04),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Name + Stock
+                    Row(
+                      mainAxisAlignment:
+                      MainAxisAlignment.spaceBetween,
                       children: [
-                        DetailsPageRow(label: 'Weight', value: '2.4 g'),
-                        SizedBox(height: height * 0.01),
-                        DetailsPageRow(label: 'Purity', value: '22 carat gold'),
+                        Expanded(
+                          child: Text(
+                            productName,
+                            style: FFontStyles.customAppBarTitleText(20),
+                          ),
+                        ),
+                        if (stock > 0)
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: width * 0.03,
+                                vertical: height * 0.005),
+                            decoration: BoxDecoration(
+                              color:
+                              AppColors.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              "$stock Stock Left",
+                              style: FFontStyles.stockLeft(14),
+                            ),
+                          ),
                       ],
                     ),
-                  ),
-                ],
+
+                    SizedBox(height: height * 0.01),
+
+                    // Description
+                    Text(
+                      description,
+                      style: FFontStyles.cartLabel(14),
+                    ),
+
+                    SizedBox(height: height * 0.02),
+
+                    // Specs (Weight, Purity etc.)
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: width * 0.04,
+                          vertical: height * 0.03),
+                      decoration: BoxDecoration(
+                        color: AppColors.detailsCardBG,
+                        border: Border.all(
+                            color: AppColors.detailsCardBorder),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Column(
+                        children: [
+                          DetailsPageRow(
+                              label: 'Weight',
+                              value: weight.toString()),
+                          SizedBox(height: height * 0.01),
+                          DetailsPageRow(
+                              label: 'Purity',
+                              value: purity.toString()),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       floatingActionButton: _quantity > 0
           ? FloatingActionButton.extended(
-        onPressed: (){
+        onPressed: () {
           Navigator.pushNamed(context, AppRoutes.cartPage);
         },
         backgroundColor: AppColors.primary,
@@ -140,18 +248,19 @@ class _DetailsPageState extends State<DetailsPage> {
           borderRadius: BorderRadius.circular(30),
         ),
         label: Padding(
-          padding: EdgeInsets.symmetric(horizontal: width * 0.0, vertical: height * 0.02),
+          padding: EdgeInsets.symmetric(
+              horizontal: width * 0.0, vertical: height * 0.02),
           child: Row(
             children: [
-              // Stack of overlapping images
-              SizedBox(
-                width: width * 0.12,
-                child: CircleAvatar(
-                  radius: height * 0.023,
-                  backgroundImage: AssetImage(additionalImages[0]), // only the first image
+              if (productImages.isNotEmpty)
+                SizedBox(
+                  width: width * 0.12,
+                  child: CircleAvatar(
+                    radius: height * 0.023,
+                    backgroundImage: NetworkImage(
+                        ApiConstants.imageUrl + productImages.first),
+                  ),
                 ),
-              ),
-
               SizedBox(width: width * 0.02),
               Text('View Cart', style: FFontStyles.button(16)),
             ],
@@ -159,65 +268,55 @@ class _DetailsPageState extends State<DetailsPage> {
         ),
       )
           : null,
-
-
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+
+      // Bottom bar
       bottomNavigationBar: Container(
-        color: Colors.black87, // same background for both states
-        padding: EdgeInsets.symmetric(vertical: height * 0.03, horizontal: width * 0.04),
+        color: Colors.black87,
+        padding: EdgeInsets.symmetric(
+            vertical: height * 0.03, horizontal: width * 0.04),
         child: _quantity > 0
             ? Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Quantity',
-              style: FFontStyles.addtoCard(20),
-            ),
+            Text('Quantity', style: FFontStyles.addtoCard(20)),
             Row(
               children: [
-                // Decrement button
+                // decrement
                 GestureDetector(
                   onTap: _decrement,
                   child: Container(
-                    width: height * 0.05, // make it square for perfect circle
+                    width: height * 0.05,
                     height: height * 0.05,
                     decoration: BoxDecoration(
                       color: AppColors.loginTextTheme,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: AppColors.primary,
-                        width: 0.96
-                      )
+                          color: AppColors.primary, width: 0.96),
                     ),
                     child: Center(
                       child: Text('-', style: TextStyle(fontSize: 25)),
                     ),
                   ),
                 ),
-
                 SizedBox(width: width * 0.03),
-
-                // Quantity display with background
+                // quantity text
                 Container(
                   height: height * 0.05,
                   padding: EdgeInsets.symmetric(horizontal: width * 0.07),
                   decoration: BoxDecoration(
-                      color: AppColors.loginTextTheme,
+                    color: AppColors.loginTextTheme,
                     borderRadius: BorderRadius.circular(50),
-                      border: Border.all(
-                          color: AppColors.primary
-                      )
+                    border: Border.all(color: AppColors.primary),
                   ),
                   alignment: Alignment.center,
                   child: Text(
-                    _quantity < 10 ? '0$_quantity' : '$_quantity', // always double digits
+                    _quantity < 10 ? '0$_quantity' : '$_quantity',
                     style: FFontStyles.quantity(14),
                   ),
                 ),
-
                 SizedBox(width: width * 0.03),
-
-                // Increment button
+                // increment
                 GestureDetector(
                   onTap: _increment,
                   child: Container(
@@ -226,19 +325,14 @@ class _DetailsPageState extends State<DetailsPage> {
                     decoration: BoxDecoration(
                       color: AppColors.loginTextTheme,
                       shape: BoxShape.circle,
-                        border: Border.all(
-                            color: AppColors.primary,
-                            width: 0.96
-                        )
+                      border: Border.all(
+                          color: AppColors.primary, width: 0.96),
                     ),
-                    child: Center(
-                      child: Icon(Icons.add),
-                    ),
+                    child: Center(child: Icon(Icons.add)),
                   ),
                 ),
               ],
             ),
-
           ],
         )
             : GestureDetector(
@@ -246,17 +340,15 @@ class _DetailsPageState extends State<DetailsPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.shopping_cart_outlined, color: AppColors.background, size: width * 0.06),
+              Icon(Icons.shopping_cart_outlined,
+                  color: AppColors.background, size: width * 0.06),
               SizedBox(width: width * 0.02),
-              Text(
-                'Add to Cart',
-                style: FFontStyles.addtoCard(16),
-              ),
+              Text('Add to Cart', style: FFontStyles.addtoCard(16)),
             ],
           ),
         ),
       ),
-
     );
   }
 }
+

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gold_project/Bloc/AuthBloc/auth_bloc.dart';
+import 'package:gold_project/Bloc/Profile/profile_bloc.dart';
 import 'package:gold_project/ShimmersAndAnimations/Animations.dart';
 import 'package:gold_project/Routes/app_routes.dart';
 import 'package:gold_project/Utils/AppColors.dart';
@@ -43,6 +44,18 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void saveDataAndNavigate(String userId, String? userToken) {
+    Prefs.setLoggedIn(true);
+    Prefs.setUserId(userId);
+    print(userToken);
+    Prefs.setUserToken(userToken!);
+    if(userToken.isNotEmpty || userToken != null) {
+      context.read<ProfileBloc>().add(FetchProfileEventHandler(userToken: userToken));
+    }
+    Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final height = MediaQuery.of(context).size.height;
@@ -72,10 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 isLoading = false;
               });
               // Save preferences asynchronously
-              Prefs.setLoggedIn(true);
-              Prefs.setUserId(userId);
-              Prefs.setUserId(userToken);
-              Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+             saveDataAndNavigate(userId, userToken);
 
             } else if(state is LoginError) {
               TopSnackbar.show(context, message: state.message, isError: true);

@@ -26,4 +26,5 @@ class ImageAssets {
   static const String editProfile = "assets/images/editProfile.png";
   static const String checkIcon = "assets/images/checkIcon.png";
   static const String arrowUpLinear = "assets/images/arrowUpLinear.png";
+  static const String closeIcon = "assets/images/closeIcon.png";
 }

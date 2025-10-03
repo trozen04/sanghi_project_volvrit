@@ -2,16 +2,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:gold_project/Utils/AppColors.dart';
 import 'package:gold_project/Utils/FFontStyles.dart';
+import 'dart:developer' as developer;
 
 Future<dynamic> showMultiSelectDropdown({
   required BuildContext context,
   required GlobalKey key,
   required String title,
-  required List<String> options,                     // main dropdown options
-  dynamic initiallySelected,                         // List<String> or Map<String,List<String>>
+  required List<String> options, // main dropdown options
+  dynamic initiallySelected, // Map<String, List<String>> for main and side
   required Function(List<String>) onSelected,
   bool enableSideDropdown = false,
   bool singleSelection = false,
+  bool singleSideSelection = false, // Single selection for side dropdown
   Map<String, List<String>> sideOptionsMap = const {}, // per-main-item sub-options
 }) async {
   final List<String> mainSelected = initiallySelected is Map
@@ -20,6 +22,9 @@ Future<dynamic> showMultiSelectDropdown({
   final Map<String, List<String>> sideSelectedMap = initiallySelected is Map
       ? Map<String, List<String>>.from(initiallySelected['side'] ?? {})
       : {};
+
+  developer.log('Initial mainSelected: $mainSelected, sideSelectedMap: $sideSelectedMap');
+  developer.log('sideOptionsMap: $sideOptionsMap');
 
   final renderBox = key.currentContext!.findRenderObject() as RenderBox;
   final offset = renderBox.localToGlobal(Offset.zero);
@@ -30,27 +35,28 @@ Future<dynamic> showMultiSelectDropdown({
   OverlayEntry? sideEntry;
   late OverlayEntry barrier;
   late void Function(void Function()) mainSetState;
+  String? currentSideDropdownItem; // Track current side dropdown category
 
   final completer = Completer<dynamic>();
 
   void removeAll() {
     if (mainEntry.mounted) mainEntry.remove();
-    if (sideEntry?.mounted ?? false) sideEntry?.remove();
+    if (sideEntry?.mounted ?? false) {
+      sideEntry?.remove();
+      sideEntry = null;
+      developer.log('Side dropdown removed');
+    }
     if (barrier.mounted) barrier.remove();
 
-    if (enableSideDropdown && sideSelectedMap.isNotEmpty) {
-      if (!completer.isCompleted) {
-        completer.complete({
-          'main': mainSelected,
-          'side': sideSelectedMap,
-        });
-      }
-    } else {
-      if (!completer.isCompleted) completer.complete(mainSelected);
+    if (!completer.isCompleted) {
+      completer.complete({
+        'main': mainSelected,
+        'side': sideSelectedMap,
+      });
     }
   }
 
-  // tap-outside barrier
+  // Tap-outside barrier
   barrier = OverlayEntry(
     builder: (_) => GestureDetector(
       onTap: removeAll,
@@ -59,6 +65,94 @@ Future<dynamic> showMultiSelectDropdown({
     ),
   );
   overlay.insert(barrier);
+
+  void showSideDropdown(String item) {
+    if (currentSideDropdownItem == item && (sideEntry?.mounted ?? false)) {
+      developer.log('Side dropdown already open for $item, skipping');
+      return;
+    }
+
+    final subOpts = sideOptionsMap[item] ?? [];
+    developer.log('Showing side dropdown for $item with sub-options: $subOpts');
+    if (subOpts.isEmpty || !mainSelected.contains(item)) {
+      if (sideEntry?.mounted ?? false) {
+        sideEntry?.remove();
+        sideEntry = null;
+        developer.log('No sub-options or item not selected, closing side dropdown');
+      }
+      currentSideDropdownItem = null;
+      return;
+    }
+
+    currentSideDropdownItem = item;
+    if (sideEntry?.mounted ?? false) {
+      sideEntry?.remove();
+      sideEntry = null;
+    }
+
+    sideEntry = OverlayEntry(
+      builder: (_) {
+        double sideLeft = offset.dx + size.width + (MediaQuery.of(context).size.width * 0.07);
+        if (sideLeft + 150 > MediaQuery.of(context).size.width) sideLeft = offset.dx - 150 - 8;
+        double maxHeight = MediaQuery.of(context).size.height - offset.dy - size.height - 16;
+        return Positioned(
+          left: sideLeft,
+          top: offset.dy + size.height,
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(6),
+            child: IntrinsicWidth(
+              child: Container(
+                constraints: BoxConstraints(maxHeight: maxHeight),
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: AppColors.dialogBorder),
+                ),
+                child: StatefulBuilder(
+                  builder: (ctxSide, setStateSide) {
+                    final selectedList = sideSelectedMap[item] ?? [];
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: subOpts.map((subItem) {
+                        final isSubChecked = selectedList.contains(subItem);
+                        return CheckboxListTile(
+                          value: isSubChecked,
+                          title: Text(subItem, style: FFontStyles.filters(14)),
+                          controlAffinity: ListTileControlAffinity.leading,
+                          checkColor: AppColors.primary,
+                          fillColor: MaterialStateProperty.resolveWith((_) => AppColors.checkboxColor),
+                          side: MaterialStateBorderSide.resolveWith((_) => BorderSide.none),
+                          contentPadding: EdgeInsets.zero,
+                          visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+                          onChanged: (checked) {
+                            setStateSide(() {
+                              if (singleSideSelection) {
+                                selectedList.clear();
+                                if (checked == true) selectedList.add(subItem);
+                              } else {
+                                if (checked == true) selectedList.add(subItem);
+                                else selectedList.remove(subItem);
+                              }
+                              sideSelectedMap[item] = List.from(selectedList);
+                            });
+                            mainSetState(() {});
+                          },
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    overlay.insert(sideEntry!);
+  }
 
   mainEntry = OverlayEntry(
     builder: (_) {
@@ -87,6 +181,14 @@ Future<dynamic> showMultiSelectDropdown({
                 child: StatefulBuilder(
                   builder: (ctx, setState) {
                     mainSetState = setState;
+                    // Show side dropdown for selected category on initial render
+                    if (enableSideDropdown && mainSelected.isNotEmpty && sideOptionsMap.containsKey(mainSelected.first)) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (currentSideDropdownItem != mainSelected.first) {
+                          showSideDropdown(mainSelected.first);
+                        }
+                      });
+                    }
                     return Column(
                       mainAxisSize: MainAxisSize.min,
                       children: options.map((item) {
@@ -104,93 +206,21 @@ Future<dynamic> showMultiSelectDropdown({
                             setState(() {
                               if (singleSelection) {
                                 mainSelected.clear();
+                                sideSelectedMap.clear(); // Clear subcategories when changing main option
                                 if (checked == true) mainSelected.add(item);
                               } else {
-                                if (checked == true) mainSelected.add(item);
-                                else {
+                                if (checked == true) {
+                                  mainSelected.add(item);
+                                } else {
                                   mainSelected.remove(item);
-                                  sideSelectedMap.remove(item); // clear its sub-options
+                                  sideSelectedMap.remove(item); // Clear sub-options
                                 }
                               }
                               onSelected(mainSelected);
                             });
 
                             if (!enableSideDropdown) return;
-
-                            // get sub-options for this main item
-                            final subOpts = sideOptionsMap[item] ?? [];
-                            if (subOpts.isEmpty) {
-                              sideEntry?.remove();
-                              return;
-                            }
-
-                            final mainTop = offset.dy + size.height;
-                            final mainLeft = offset.dx;
-                            final screenW = MediaQuery.of(context).size.width;
-                            sideEntry?.remove();
-
-                            sideEntry = OverlayEntry(
-                              builder: (_) {
-                                double sideLeft = mainLeft + size.width + (screenW * 0.12);
-                                if (sideLeft + 150 > screenW) sideLeft = mainLeft - 150 - 8;
-                                double maxHeight = MediaQuery.of(context).size.height - mainTop - 16;
-                                return Positioned(
-                                  left: sideLeft,
-                                  top: mainTop,
-                                  child: Material(
-                                    elevation: 4,
-                                    borderRadius: BorderRadius.circular(6),
-                                    child: IntrinsicWidth(
-                                      child: Container(
-                                        constraints: BoxConstraints(maxHeight: maxHeight),
-                                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.background,
-                                          borderRadius: BorderRadius.circular(6),
-                                          border: Border.all(color: AppColors.dialogBorder),
-                                        ),
-                                        child: StatefulBuilder(
-                                          builder: (ctxSide, setStateSide) {
-                                            final selectedList = sideSelectedMap[item] ?? [];
-                                            return Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: subOpts.map((subItem) {
-                                                final isSubChecked = selectedList.contains(subItem);
-                                                return CheckboxListTile(
-                                                  value: isSubChecked,
-                                                  title: Text(subItem, style: FFontStyles.filters(14)),
-                                                  controlAffinity: ListTileControlAffinity.leading,
-                                                  checkColor: AppColors.primary,
-                                                  fillColor: MaterialStateProperty.resolveWith((_) => AppColors.checkboxColor),
-                                                  side: MaterialStateBorderSide.resolveWith((_) => BorderSide.none),
-                                                  contentPadding: EdgeInsets.zero,
-                                                  visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
-                                                  onChanged: (checked) {
-                                                    setStateSide(() {
-                                                      if (singleSelection) {
-                                                        selectedList.clear();
-                                                        if (checked == true) selectedList.add(subItem);
-                                                      } else {
-                                                        if (checked == true) selectedList.add(subItem);
-                                                        else selectedList.remove(subItem);
-                                                      }
-                                                      sideSelectedMap[item] = List.from(selectedList);
-                                                    });
-                                                    mainSetState(() {});
-                                                  },
-                                                );
-                                              }).toList(),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-
-                            overlay.insert(sideEntry!);
+                            showSideDropdown(item);
                           },
                         );
                       }).toList(),
@@ -208,4 +238,3 @@ Future<dynamic> showMultiSelectDropdown({
   overlay.insert(mainEntry);
   return completer.future;
 }
-

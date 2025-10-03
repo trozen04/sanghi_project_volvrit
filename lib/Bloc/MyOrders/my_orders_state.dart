@@ -8,7 +8,7 @@ final class MyOrdersInitial extends MyOrdersState {}
 /// ----- ORDERS LIST -----
 final class OrdersLoading extends MyOrdersState {}
 final class OrdersLoaded extends MyOrdersState {
-  final List<Map<String, dynamic>> orders;
+  final orders;
   OrdersLoaded(this.orders);
 }
 final class OrdersError extends MyOrdersState {
@@ -19,8 +19,8 @@ final class OrdersError extends MyOrdersState {
 /// ----- ORDER DETAILS -----
 final class OrderDetailsLoading extends MyOrdersState {}
 final class OrderDetailsLoaded extends MyOrdersState {
-  final Map<String, dynamic> order;
-  OrderDetailsLoaded(this.order);
+  final orderData;
+  OrderDetailsLoaded(this.orderData);
 }
 final class OrderDetailsError extends MyOrdersState {
   final String message;

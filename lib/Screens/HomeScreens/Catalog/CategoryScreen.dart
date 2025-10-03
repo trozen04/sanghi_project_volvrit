@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gold_project/Bloc/DashboardBloc/dashboard_bloc.dart';
 import 'package:gold_project/ShimmersAndAnimations/Animations.dart';
 import 'package:gold_project/ShimmersAndAnimations/Shimmers.dart';
+import 'package:gold_project/Utils/ApiConstants.dart';
 import 'package:gold_project/Utils/AppColors.dart';
 import 'package:gold_project/Utils/FFontStyles.dart';
 import 'package:gold_project/Utils/ImageAssets.dart';
+import 'package:gold_project/Utils/PrefUtils.dart';
 import 'package:gold_project/Widgets/MultiSelectDialog.dart';
 import 'package:gold_project/Widgets/ProductCard.dart';
+import 'package:gold_project/Widgets/TopSnackbar.dart';
 import 'package:gold_project/Widgets/action_button.dart';
 import 'package:gold_project/Widgets/AppBar/category_app_bar.dart';
+import 'dart:developer' as developer;
+import 'dart:convert';
 
 class CategoryScreen extends StatefulWidget {
   const CategoryScreen({super.key});
@@ -17,12 +24,65 @@ class CategoryScreen extends StatefulWidget {
 }
 
 class _CategoryScreenState extends State<CategoryScreen> {
-  dynamic selectedCategories = [];
-  List<String> selectedFilters = [];
-  List<String> selectedSort = [];
-  bool isLoading = false;
+  dynamic selectedCategories = {'main': [], 'side': {}}; // Map for category selections
+  dynamic selectedFilters = {'main': [], 'side': {}}; // Map for filter selections
+  bool isLoading = true; // Initial loading state
+  bool isCategoriesLoaded = false;
+  List<dynamic> categories = []; // Store API-fetched categories
+  List<Map<String, dynamic>> products = []; // Store API-fetched products
   GlobalKey categoryKey = GlobalKey();
   GlobalKey filterKey = GlobalKey();
+
+  // Helper function to parse weight selection into minWeight and maxWeight
+  Map<String, String?> parseWeight(String? weight) {
+    if (weight == null) return {'minWeight': null, 'maxWeight': null};
+    if (weight.startsWith('<')) {
+      return {'minWeight': null, 'maxWeight': weight.replaceFirst('<', '').replaceAll('g', 'gr')};
+    } else if (weight.startsWith('>')) {
+      return {'minWeight': weight.replaceFirst('>', '').replaceAll('g', 'gr'), 'maxWeight': null};
+    } else {
+      final parts = weight.split('-');
+      if (parts.length == 2) {
+        return {
+          'minWeight': parts[0].replaceAll('g', 'gr'),
+          'maxWeight': parts[1].replaceAll('g', 'gr'),
+        };
+      }
+    }
+    return {'minWeight': null, 'maxWeight': null};
+  }
+
+  // Helper function to compare two selection maps
+  bool areSelectionsEqual(dynamic a, dynamic b) {
+    return jsonEncode(a) == jsonEncode(b);
+  }
+
+  // Helper function to trigger API with combined parameters
+  void triggerApi({
+    String? categoryName,
+    String? subCategoryName,
+    String? purity,
+    String? minWeight,
+    String? maxWeight,
+  }) {
+    developer.log('Triggering API with params: categoryName=$categoryName, subCategoryName=$subCategoryName, purity=$purity, minWeight=$minWeight, maxWeight=$maxWeight');
+    context.read<DashboardBloc>().add(FetchCategoryListEventHandler(
+      token: Prefs.getUserToken() ?? '',
+      categoryName: categoryName,
+      subCategoryName: subCategoryName,
+      purity: purity,
+      minWeight: minWeight,
+      maxWeight: maxWeight,
+      page: 1,
+    ));
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch initial data (all categories and products)
+    triggerApi();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,140 +92,286 @@ class _CategoryScreenState extends State<CategoryScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const CategoryAppBar(),
-      body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: width * 0.04, vertical: height * 0.015),
-        child: isLoading
-            ? CategoryScreenShimmer()
-            : ParallaxFadeIn(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  // CATEGORY BUTTON
-                  ActionButton(
-                    key: categoryKey,
-                    icon: Icons.grid_view_outlined,
-                    label: 'Category',
-                    onTap: () async {
+      body: BlocListener<DashboardBloc, DashboardState>(
+        listener: (context, state) {
+          // ------------------ PRODUCT LIST STATES ------------------
+          if (state is ProductListLoading) {
+            setState(() {
+              isLoading = true;
+            });
+          }
+          else if (state is ProductListLoaded) {
+            final productData = state.responseData as Map<String, dynamic>;
+
+            setState(() {
+              // Initial categories load
+              if (!isCategoriesLoaded && productData.containsKey('categories')) {
+                categories = productData['categories'] as List? ?? [];
+                isCategoriesLoaded = true;
+              }
+
+              // Extract products
+              products.clear();
+              final categoryData = productData['categories'] as List? ?? [];
+              for (var category in categoryData) {
+                final subcategories = category['subcategories'] as List? ?? [];
+                for (var subcategory in subcategories) {
+                  final subcategoryProducts = subcategory['products'] as List? ?? [];
+                  products.addAll(subcategoryProducts.cast<Map<String, dynamic>>());
+                }
+              }
+
+              isLoading = false;
+            });
+          }
+          else if (state is ProductListError) {
+            setState(() {
+              isLoading = false;
+            });
+            TopSnackbar.show(context, message: state.message, isError: true);
+          }
+
+          // ------------------ CART UPDATE STATES ------------------
+          else if (state is AddToCartSuccess) {
+            final responseData = state.response;
+            final cartItems = responseData['cart']['items'] as List<dynamic>? ?? [];
+
+            setState(() {
+              for (var product in products) {
+                final index = products.indexOf(product);
+                final item = cartItems.firstWhere(
+                      (e) => e['product'] == product['_id'],
+                  orElse: () => null,
+                );
+
+                // Update quantity or set 0 if removed
+                products[index]['cartQuantity'] = item != null ? item['quantity'] ?? 0 : 0;
+              }
+            });
+
+            TopSnackbar.show(context, message: 'Cart updated successfully');
+          }
+          else if (state is AddOrRemoveCartSuccess) {
+            final responseData = state.response;
+            final cartItems = responseData['cart']['items'] as List<dynamic>? ?? [];
+
+            setState(() {
+              for (var product in products) {
+                final index = products.indexOf(product);
+                final item = cartItems.firstWhere(
+                      (e) => e['product'] == product['_id'],
+                  orElse: () => null,
+                );
+
+                // Update quantity or set 0 if removed
+                products[index]['cartQuantity'] = item != null ? item['quantity'] ?? 0 : 0;
+              }
+            });
+
+            TopSnackbar.show(context, message: 'Cart updated successfully');
+          }
+
+          // ------------------ CART ERROR STATES ------------------
+          else if (state is AddToCartError) {
+            TopSnackbar.show(context, message: 'Failed to add item to cart', isError: true);
+          }
+          else if (state is AddOrRemoveCartError) {
+            TopSnackbar.show(context, message: 'Failed to update cart', isError: true);
+          }
+        },
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: width * 0.04, vertical: height * 0.015),
+          child: isLoading
+              ? const CategoryScreenShimmer()
+              : ParallaxFadeIn(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    // CATEGORY BUTTON
+                    ActionButton(
+                      key: categoryKey,
+                      icon: Icons.grid_view_outlined,
+                      label: 'Category',
+                      onTap: () async {
+                        if (!isCategoriesLoaded) {
+                          developer.log('Categories not loaded yet, skipping dropdown');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Categories are still loading, please wait'),
+                              backgroundColor: Colors.orange,
+                            ),
+                          );
+                          return;
+                        }
+                        final sideOptionsMap = Map.fromEntries(
+                          categories.map((cat) => MapEntry(
+                            cat['categoryname'] as String,
+                            (cat['subcategories'] as List)
+                                .map((sub) => sub['subcategoryname'] as String)
+                                .toList(),
+                          )),
+                        );
+                        developer.log('Category sideOptionsMap: $sideOptionsMap');
                         final result = await showMultiSelectDropdown(
                           context: context,
                           key: categoryKey,
                           enableSideDropdown: true,
+                          singleSelection: true,
+                          singleSideSelection: true, // Enforce single subcategory selection
                           title: 'Select Category',
-                          options: const ['Gold Rings', 'Gold Neckless', 'Gold Bangles', 'Gold Earrings'],
-                          sideOptionsMap: const {
-                            'Gold Rings': ['Men', 'Women', 'Kids'],
-                            'Gold Neckless': ['Men', 'Women', 'Kids'],
-                            'Gold Bangles': ['Men', 'Women', 'Kids'],
-                            'Gold Earrings': ['Men', 'Women', 'Kids'],
-                          },
+                          options: categories.map((cat) => cat['categoryname'] as String).toList(),
+                          sideOptionsMap: sideOptionsMap,
                           initiallySelected: selectedCategories,
                           onSelected: (selectedList) {
-                            setState(() => selectedCategories = selectedList);
+                            setState(() {
+                              selectedCategories = {
+                                'main': selectedList,
+                                'side': selectedCategories['side'] ?? {},
+                              };
+                            });
                           },
                         );
 
-                      // Print the final selected items when dropdown(s) are closed
-                      print('Final selection: $result');
-
-                      if (result != null) {
-                        setState(() => selectedCategories = result);
-                      }
-                    },
-                  ),
-                  SizedBox(width: width * 0.05),
-                  ActionButton(
-                    key: filterKey,
-                    icon: Icons.filter_list_rounded,
-                    label: 'Filter',
-                    onTap: () async {
-                      final result = await showMultiSelectDropdown(
-                        context: context,
-                        enableSideDropdown: true,
-                        title: 'Select Filter',
-                        options: const ['Weight', 'Purity'],
-                        sideOptionsMap: const {
-                          'Weight': ['<3g','3-5g', '5–7g', '7–10g', '10–12g', '12–15g', '15–17g', '17–20g', '20g>'],
-                          'Purity': ['18k', '20k', '22k', '24k'],
-                        },
-                        initiallySelected: selectedFilters,
-                        onSelected: (selectedList) {
-                          setState(() => selectedFilters = selectedList);
-                        },
-                        key: filterKey,
-                      );
-                      print('Filter selection: $result');
-
-                      if (result != null) {
-                        setState(() => selectedFilters = result);
-                      }
-                    },
-                  ),
-
-                  // Row(
-                  //   children: [
-                  //
-                  //     SizedBox(width: width * 0.02),
-                  //     // SORT BUTTON
-                  //     ActionButton(
-                  //       key: sorByKey,
-                  //       icon: Icons.keyboard_arrow_down_outlined,
-                  //       label: 'Sort By',
-                  //       isRight: true,
-                  //       onTap: () async {
-                  //         final result = await showMultiSelectDropdown(
-                  //           context: context,
-                  //           title: 'Sort By',
-                  //           singleSelection: true,
-                  //           options: const ['Ascending', 'Descending'],
-                  //           initiallySelected: selectedSort,
-                  //           onSelected: (selectedList) {
-                  //             setState(() => selectedSort = selectedList);
-                  //           },
-                  //           key: sorByKey
-                  //         );
-                  //
-                  //         print('Sort selection: $result');
-                  //
-                  //         if (result != null) {
-                  //           setState(() => selectedSort = result);
-                  //         }
-                  //       },
-                  //     ),
-                  //   ],
-                  // ),
-
-                ],
-              ),
-
-              SizedBox(height: height * 0.01),
-              Text('Gold Rings', style: FFontStyles.titleText(18)),
-              SizedBox(height: height * 0.01),
-
-              Expanded(
-                child: GridView.builder(
-                  padding: EdgeInsets.zero,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 0.75,
-                  ),
-                  itemCount: 6,
-                  itemBuilder: (context, index) {
-                    return ProductCard(
-                      title: 'Gold Rings',
-                      imagePath: ImageAssets.RingImage,
-                      stockLabel: '2 Stock Left',
-                      onAdd: () {
-                        // handle add to cart
+                        // Handle dropdown close
+                        if (result != null && !areSelectionsEqual(result, selectedCategories)) {
+                          setState(() {
+                            selectedCategories = result;
+                          });
+                          // Extract category and subcategory
+                          final mainCategory = (result['main'] as List).isNotEmpty ? result['main'][0] : null;
+                          final subCategory = mainCategory != null &&
+                              result['side'] != null &&
+                              (result['side'][mainCategory] as List?)?.isNotEmpty == true
+                              ? result['side'][mainCategory][0]
+                              : null;
+                          // Extract filters
+                          final purity = selectedFilters['side']?['Purity']?.isNotEmpty == true
+                              ? selectedFilters['side']['Purity'][0]
+                              : null;
+                          final weight = selectedFilters['side']?['Weight']?.isNotEmpty == true
+                              ? selectedFilters['side']['Weight'][0]
+                              : null;
+                          final weightParams = parseWeight(weight);
+                          triggerApi(
+                            categoryName: mainCategory,
+                            subCategoryName: subCategory,
+                            purity: purity,
+                            minWeight: weightParams['minWeight'],
+                            maxWeight: weightParams['maxWeight'],
+                          );
+                        } else {
+                          developer.log('No changes in category selections, skipping API call');
+                        }
                       },
-                    );
-                  },
+                    ),
+                    SizedBox(width: width * 0.05),
+                    // FILTER BUTTON
+                    ActionButton(
+                      key: filterKey,
+                      icon: Icons.filter_list_rounded,
+                      label: 'Filter',
+                      onTap: () async {
+                        final result = await showMultiSelectDropdown(
+                          context: context,
+                          key: filterKey,
+                          enableSideDropdown: true,
+                          singleSideSelection: true,
+                          title: 'Select Filter',
+                          options: const ['Weight', 'Purity'],
+                          sideOptionsMap: const {
+                            'Weight': ['<3g', '3-5g', '5-7g', '7-10g', '10-12g', '12-15g', '15-17g', '17-20g', '>20g'],
+                            'Purity': ['18k', '20k', '22k', '24k'],
+                          },
+                          initiallySelected: selectedFilters,
+                          onSelected: (selectedList) {
+                            setState(() {
+                              selectedFilters = {
+                                'main': selectedList,
+                                'side': selectedFilters['side'] ?? {},
+                              };
+                            });
+                          },
+                        );
+                        if (result != null && !areSelectionsEqual(result, selectedFilters)) {
+                          setState(() => selectedFilters = result);
+                          // Extract filters
+                          final purity = result['side']?['Purity']?.isNotEmpty == true
+                              ? result['side']['Purity'][0]
+                              : null;
+                          final weight = result['side']?['Weight']?.isNotEmpty == true
+                              ? result['side']['Weight'][0]
+                              : null;
+                          final weightParams = parseWeight(weight);
+                          // Extract category
+                          final mainCategory = (selectedCategories['main'] as List).isNotEmpty
+                              ? selectedCategories['main'][0]
+                              : null;
+                          final subCategory = mainCategory != null &&
+                              selectedCategories['side'] != null &&
+                              (selectedCategories['side'][mainCategory] as List?)?.isNotEmpty == true
+                              ? selectedCategories['side'][mainCategory][0]
+                              : null;
+                          triggerApi(
+                            categoryName: mainCategory,
+                            subCategoryName: subCategory,
+                            purity: purity,
+                            minWeight: weightParams['minWeight'],
+                            maxWeight: weightParams['maxWeight'],
+                          );
+                        } else {
+                          developer.log('No changes in filter selections, skipping API call');
+                        }
+                      },
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                SizedBox(height: height * 0.01),
+                Text(
+                  selectedCategories['main'].isNotEmpty
+                      ? selectedCategories['main'][0]
+                      : 'All Products',
+                  style: FFontStyles.titleText(18),
+                ),
+                SizedBox(height: height * 0.01),
+                Expanded(
+                  child: products.isEmpty && !isLoading
+                      ? const Center(child: Text('No products found'))
+                      : GridView.builder(
+                    padding: EdgeInsets.zero,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.75,
+                    ),
+                    itemCount: products.length,
+                    itemBuilder: (context, index) {
+                      final product = products[index];
+                      return ProductCard(
+                        id: product['_id'],
+                        title: product['productname']?.toString() ?? 'Product',
+                        imagePath: (product['images'] is List && (product['images'] as List).isNotEmpty)
+                            ? '${ApiConstants.imageUrl}${product['images'][0]}'
+                            : ImageAssets.RingImage,
+                        stockLabel: '${product['stock']?.toString() ?? '0'} Stock Left',
+                        onAdd: () {
+                          context.read<DashboardBloc>().add(AddToCartEventHandler(productId: product['_id']));
+                        },
+                        onIncrement: () {
+                          context.read<DashboardBloc>().add(AddOrRemoveCartEventHandler(productId: product['_id'], action: 'increase'));
+                        },
+                        onDecrement: () {
+                          context.read<DashboardBloc>().add(AddOrRemoveCartEventHandler(productId: product['_id'], action: 'decrease'));
+                        },
+                        cartQuantity: product['cartQuantity'],
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
