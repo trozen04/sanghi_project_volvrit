@@ -15,6 +15,7 @@ final class FetchCategoryListEventHandler extends DashboardEvent {
   String? minWeight;
   String? maxWeight;
   String? purity;
+  String? searchQuery;
   FetchCategoryListEventHandler(
       {required this.token,
         this.categoryName,
@@ -22,7 +23,8 @@ final class FetchCategoryListEventHandler extends DashboardEvent {
         this.page,
         this.minWeight,
         this.maxWeight,
-        this.purity
+        this.purity,
+        this.searchQuery
       });
 }
 

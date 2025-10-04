@@ -192,7 +192,7 @@ class ImageStackWidget extends StatelessWidget {
   Widget _buildNetworkImage(String url, {BoxFit fit = BoxFit.cover}) {
     return Image.network(
       ApiConstants.imageUrl + url,
-      fit: fit,
+      fit: BoxFit.fill,
       width: double.infinity,
       height: double.infinity,
       loadingBuilder: (context, child, loadingProgress) {
@@ -227,7 +227,7 @@ class ImageStackWidget extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
             ),
-            child: _buildNetworkImage(currentImage, fit: BoxFit.cover),
+            child: _buildNetworkImage(currentImage, fit: BoxFit.fill),
           ),
 
           // Thumbnails
@@ -253,7 +253,7 @@ class ImageStackWidget extends StatelessWidget {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: _buildNetworkImage(image, fit: BoxFit.cover),
+                        child: _buildNetworkImage(image, fit: BoxFit.fill),
                       ),
                     ),
                   );
@@ -445,7 +445,7 @@ class OrderCard extends StatelessWidget {
 
             // Scrollable Images
             SizedBox(
-              height: height * 0.1,
+              height: height * 0.06,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: images.length,
@@ -456,8 +456,8 @@ class OrderCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(
                       ApiConstants.imageUrl + imgUrl,
-                      width: width * 0.18,
-                      height: height * 0.08,
+                      width: height * 0.06,
+                      height: height * 0.06,
                       fit: BoxFit.cover,
                       loadingBuilder: (context, child, progress) {
                         if (progress == null) return child;
@@ -465,16 +465,16 @@ class OrderCard extends StatelessWidget {
                           baseColor: Colors.grey[300]!,
                           highlightColor: Colors.grey[100]!,
                           child: Container(
-                            width: width * 0.18,
-                            height: height * 0.08,
+                            width: height * 0.06,
+                            height: height * 0.06,
                             color: Colors.white,
                           ),
                         );
                       },
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
-                          width: width * 0.18,
-                          height: height * 0.08,
+                          width: height * 0.06,
+                          height: height * 0.06,
                           color: Colors.grey.shade200,
                           child: const Icon(
                             Icons.image_not_supported,
@@ -497,6 +497,7 @@ class OrderCard extends StatelessWidget {
 
 
 //Order Details Page
+
 class OrderDetailsCard extends StatelessWidget {
   final String name;
   final String purity;
@@ -504,51 +505,78 @@ class OrderDetailsCard extends StatelessWidget {
   final String quantity;
   final double height;
   final double width;
+  final String? imagePath; // optional
 
-
-  const OrderDetailsCard({super.key,
+  const OrderDetailsCard({
+    super.key,
     required this.name,
     required this.purity,
     required this.weight,
     required this.quantity,
     required this.height,
     required this.width,
+    this.imagePath,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(bottom: height * 0.02),
+      margin: EdgeInsets.only(bottom: height * 0.03),
       decoration: BoxDecoration(
         color: AppColors.cartContainerColor,
-        border: Border.all(
-          color: AppColors.cartContainerBorder
-        ),
-        borderRadius: BorderRadius.circular(12)
+        border: Border.all(color: AppColors.cartContainerBorder),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
         padding: EdgeInsets.all(width * 0.04),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
+            Container(
               width: width * 0.2,
               height: width * 0.2,
-              child: Image.asset(ImageAssets.RingImage),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.grey.shade200,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: imagePath != null
+                    ? Image.network(
+                  imagePath!,
+                  fit: BoxFit.fill,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Shimmer.fromColors(
+                      baseColor: Colors.grey.shade300,
+                      highlightColor: Colors.grey.shade100,
+                      child: Container(
+                        color: Colors.grey.shade200,
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Center(
+                      child: Icon(Icons.image_not_supported, color: Colors.grey),
+                    );
+                  },
+                )
+                    : Center(
+                  child: Icon(Icons.image_not_supported, color: Colors.grey),
+                ),
+              ),
             ),
+
             SizedBox(width: width * 0.03),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    name,
-                    style: FFontStyles.cartTitle(16),
-                  ),
+                  Text(name, style: FFontStyles.cartTitle(16), overflow: TextOverflow.ellipsis,),
                   SizedBox(height: height * 0.005),
-                  CartInfoRow(label: 'Purity -', value: purity),
-                  CartInfoRow(label: 'Weight -', value: weight),
-                  CartInfoRow(label: 'Quantity -', value: quantity),
+                  CartInfoRow(label: 'Purity -', value: formatPurity(purity)),
+                  CartInfoRow(label: 'Weight -', value: formatWeight(weight)),
+                  CartInfoRow(label: 'Quantity -', value: '$quantity Qty'),
                 ],
               ),
             ),
@@ -652,5 +680,17 @@ class NotificationCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String formatPurity(String? purity) {
+  if (purity == null || purity.isEmpty) return '-';
+  final number = int.tryParse(purity.replaceAll(RegExp(r'[^0-9]'), ''));
+  return number != null ? '$number carat' : '-';
+}
+
+String formatWeight(String? weight) {
+  if (weight == null || weight.isEmpty) return '-';
+  final number = double.tryParse(weight.replaceAll(RegExp(r'[^0-9.]'), ''));
+  return number != null ? '${number.toStringAsFixed(0)}g' : '-';
 }
 

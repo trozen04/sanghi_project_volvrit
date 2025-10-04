@@ -50,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Fetch products for the selected category
-  void fetchProducts(String categoryName, {int page = 1}) {
+  void fetchProducts(String categoryName, {int page = 1, String? searchQuery}) {
     setState(() {
       isLoadingProducts = true;
       if (page == 1) currentProducts.clear(); // Clear products for new category or refresh
@@ -59,6 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
       token: token,
       categoryName: categoryName,
       page: page,
+      searchQuery: searchQuery,
     ));
   }
 
@@ -74,8 +75,11 @@ class _HomeScreenState extends State<HomeScreen> {
           // ------------------ PRODUCT LIST STATES ------------------
           if (state is ProductListLoading) {
             setState(() {
-              if (!isCategoriesLoaded) isLoading = true; // Initial category load
-              else isLoadingProducts = true; // Pagination or category switch
+              if (!isCategoriesLoaded) {
+                isLoading = true; // Initial category load
+              } else {
+                isLoadingProducts = true;
+              }
             });
           }
           else if (state is ProductListLoaded) {
@@ -124,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
             });
             TopSnackbar.show(
               context,
-              message: '${state.message}',
+              message: state.message,
               isError: true,
             );
           }
@@ -169,10 +173,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
           // ------------------ CART ERROR STATES ------------------
           else if (state is AddToCartError) {
-            TopSnackbar.show(context, message: 'Failed to add item to cart', isError: true);
+            TopSnackbar.show(context, message: state.message, isError: true);
           }
           else if (state is AddOrRemoveCartError) {
-            TopSnackbar.show(context, message: 'Failed to update cart', isError: true);
+            TopSnackbar.show(context, message: state.message, isError: true);
           }
         },
         child: RefreshIndicator(
@@ -186,6 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
             }
           },
           child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(), // <-- added
             padding: EdgeInsets.symmetric(horizontal: width * 0.04, vertical: height * 0.015),
             child: ParallaxFadeIn(
               child: Column(
@@ -193,7 +198,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Row(
                     children: [
-                      Expanded(child: SearchBarWidget()),
+                      Expanded(
+                        child: SearchBarWidget(
+                          onSearch: (query) {
+                            setState(() {
+                              currentPage = 1;
+                              currentProducts.clear();
+                            });
+                            fetchProducts(selectedCategory, page: 1, searchQuery: query); // <-- pass query
+                          },
+                        ),
+                      ),
+
                       SizedBox(width: width * 0.03),
                       GestureDetector(
                         onTap: () => Navigator.pushNamed(context, AppRoutes.notificationPage),
@@ -224,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       // Horizontal scrollable categories
                       SizedBox(
-                        height: height * 0.12, // Enough to fit circle + label
+                        height: height * 0.12,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: categories.length,
@@ -234,7 +250,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             final category = categories[index] as Map<String, dynamic>;
                             final isSelected = category['categoryname'] == selectedCategory;
 
-                            // Use category image from data, fallback to default
                             final imagePath = ApiConstants.imageUrl + (category['categoryimage'] as String? ?? '');
 
                             return GestureDetector(
@@ -260,32 +275,32 @@ class _HomeScreenState extends State<HomeScreen> {
                                       child: Stack(
                                         fit: StackFit.expand,
                                         children: [
-                                          // Shimmer background
                                           Shimmer.fromColors(
                                             baseColor: Colors.grey.shade300,
                                             highlightColor: Colors.grey.shade100,
-                                            child: Container(
-                                              color: Colors.white,
-                                            ),
+                                            child: Container(color: Colors.white),
                                           ),
-                                          // Network image
                                           Image.network(
                                             imagePath.replaceAll('\\', '/'),
                                             fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) => Image.asset(
-                                              ImageAssets.EarringImage,
-                                              fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) => Container(
+                                              color: Colors.grey.shade200,
+                                              child: const Icon(
+                                                Icons.image_not_supported,
+                                                color: Colors.grey,
+                                                size: 24,
+                                              ),
                                             ),
                                             loadingBuilder: (context, child, loadingProgress) {
                                               if (loadingProgress == null) return child;
-                                              return Container(); // shimmer already shown behind
+                                              return Container(); // shimmer already shown underneath
                                             },
-                                          ),
+                                          )
+
                                         ],
                                       ),
                                     ),
                                   ),
-
                                   SizedBox(height: height * 0.005),
                                   Text(
                                     category['categoryname'] as String,
@@ -299,15 +314,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       SizedBox(height: height * 0.018),
-                      Text('Products', style: FFontStyles.titleText(18.0), textAlign: TextAlign.left),
+                      Text('Products', style: FFontStyles.titleText(18.0)),
                       SizedBox(height: height * 0.015),
                       isLoadingProducts
                           ? Center(child: CircularProgressIndicator())
                           : currentProducts.isEmpty
-                          ? Center(
+                          ? Container(
+                        margin: EdgeInsets.only(top: height * 0.15),
+                        alignment: Alignment.center,
                         child: Text(
-                          'No products available',
-                          style: FFontStyles.headingSubTitleText(20.0),
+                          "Currently, there are no products available.",
+                          style: FFontStyles.noAccountText(14.0),
                         ),
                       )
                           : Column(
@@ -324,7 +341,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             itemCount: currentProducts.length,
                             itemBuilder: (context, index) {
                               final product = currentProducts[index];
-                              // Use the first image from the product's images list
                               final productImage = (product['images'] as List?)?.isNotEmpty ?? false
                                   ? ApiConstants.imageUrl +
                                   ((product['images'] as List)[0] as String).replaceAll('\\', '/')
@@ -334,28 +350,53 @@ class _HomeScreenState extends State<HomeScreen> {
                                 id: product['_id'],
                                 title: product['productname'] as String? ?? 'Unnamed Product',
                                 imagePath: productImage,
-                                stockLabel: '${product['stock'] ?? 0} Stock Left',
+                                stockLabel: product['stock'] ?? 0,
                                 onAdd: () {
                                   context.read<DashboardBloc>().add(AddToCartEventHandler(productId: product['_id']));
                                 },
                                 onIncrement: () {
-                                  context.read<DashboardBloc>().add(AddOrRemoveCartEventHandler(productId: product['_id'], action: 'increase'));
+                                  context.read<DashboardBloc>().add(AddOrRemoveCartEventHandler(
+                                      productId: product['_id'], action: 'increase'));
                                 },
                                 onDecrement: () {
-                                  context.read<DashboardBloc>().add(AddOrRemoveCartEventHandler(productId: product['_id'], action: 'decrease'));
+                                  context.read<DashboardBloc>().add(AddOrRemoveCartEventHandler(
+                                      productId: product['_id'], action: 'decrease'));
                                 },
                                 cartQuantity: product['cartQuantity'] ?? 0,
                               );
                             },
                           ),
-                          if (currentPage < totalPages)
-                            Padding(
-                              padding: EdgeInsets.symmetric(vertical: height * 0.02),
-                              child: ElevatedButton(
-                                onPressed: () => fetchProducts(selectedCategory, page: currentPage + 1),
-                                child: Text('Load More'),
-                              ),
-                            ),
+                          // if (currentPage < totalPages)
+                          //   Padding(
+                          //     padding: EdgeInsets.symmetric(vertical: height * 0.02),
+                          //     child: ElevatedButton(
+                          //       style: ElevatedButton.styleFrom(
+                          //         backgroundColor: Colors.orange.shade600, // bright, noticeable color
+                          //         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          //         shape: RoundedRectangleBorder(
+                          //           borderRadius: BorderRadius.circular(12), // rounded corners
+                          //         ),
+                          //         elevation: 4, // subtle shadow
+                          //       ),
+                          //       onPressed: () => fetchProducts(selectedCategory, page: currentPage + 1),
+                          //       child: Row(
+                          //         mainAxisSize: MainAxisSize.min,
+                          //         children: [
+                          //           Icon(Icons.arrow_circle_down_sharp, color: Colors.white, size: 24),
+                          //           const SizedBox(width: 8),
+                          //           Text(
+                          //             'Load More',
+                          //             style: TextStyle(
+                          //               color: Colors.white,
+                          //               fontWeight: FontWeight.bold,
+                          //               fontSize: 16,
+                          //             ),
+                          //           ),
+                          //         ],
+                          //       ),
+                          //     )
+                          //
+                          //   ),
                         ],
                       ),
                     ],
@@ -364,7 +405,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-        ),
+        )
+
       ),
     );
   }

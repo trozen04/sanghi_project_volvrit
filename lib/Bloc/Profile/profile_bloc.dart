@@ -15,7 +15,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       emit(ProfileLoading());
       try {
         // Get userId directly
-        final userId = await Prefs.getUserId();
+        final userId = Prefs.getUserId();
 
         // Build URL
         final url = '${ApiConstants.baseUrl}${ApiConstants.getProfile}$userId';
@@ -48,7 +48,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<UpdateProfileEventHandler>((event, emit) async {
       emit(ProfileUpdating());
       try {
-        String? userId = await Prefs.getUserId();
+        String? userId = Prefs.getUserId();
         final body = {
           'bussinessname': event.businessName,
           'personname': event.name,

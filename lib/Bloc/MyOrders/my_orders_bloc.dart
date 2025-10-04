@@ -64,22 +64,28 @@ class MyOrdersBloc extends Bloc<MyOrdersEvent, MyOrdersState> {
     on<FetchOrderDetailsEventHandler>((event, emit) async {
       emit(OrderDetailsLoading());
       try {
-        final url = '${ApiConstants.baseUrl}/${ApiConstants.myOrders}${event.orderId}';
-        developer.log('Fetching order details: $url');
+        final params = <String, dynamic>{
+          'page': event.page,
+        };
+
+        final url = '${ApiConstants.baseUrl}${ApiConstants.myOrders}${event.orderId}/user';
+        final uri = Uri.parse(url);
+
+        developer.log('Fetching myOrderDetails: $uri');
 
         final res = await http.get(
-            Uri.parse(url),
+            uri,
             headers: {
               'Authorization': 'Bearer ${Prefs.getUserToken()}',
               'Accept': 'application/json',
             }
         );
-        developer.log('Response: ${res.body}');
+
 
         final responseData = jsonDecode(res.body);
 
         if (res.statusCode == 200 || res.statusCode == 201) {
-          emit(OrderDetailsLoaded(responseData));
+          emit(OrderDetailsLoaded(responseData['data']));
         } else {
           emit(OrderDetailsError(responseData['message'] ?? 'Failed to fetch order details'));
         }

@@ -44,31 +44,33 @@ class CustomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.15),
-            offset: Offset(0, -3),
-            blurRadius: 6,
+    return SafeArea(
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              offset: Offset(0, -3),
+              blurRadius: 6,
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.only(top: 4.0),
+        child: SizedBox(
+          height: height,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(navItems.length, (index) {
+              final item = navItems[index];
+              final isSelected = selectedIndex == index;
+              return _buildNavItem(
+                isSelected ? item['selected']! : item['unselected']!,
+                item['label']!,
+                index,
+              );
+            }),
           ),
-        ],
-      ),
-      padding: const EdgeInsets.only(top: 4.0),
-      child: SizedBox(
-        height: height,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: List.generate(navItems.length, (index) {
-            final item = navItems[index];
-            final isSelected = selectedIndex == index;
-            return _buildNavItem(
-              isSelected ? item['selected']! : item['unselected']!,
-              item['label']!,
-              index,
-            );
-          }),
         ),
       ),
     );

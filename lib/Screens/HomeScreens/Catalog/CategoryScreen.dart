@@ -32,7 +32,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
   List<Map<String, dynamic>> products = []; // Store API-fetched products
   GlobalKey categoryKey = GlobalKey();
   GlobalKey filterKey = GlobalKey();
-
+  String searchQuery = '';
   // Helper function to parse weight selection into minWeight and maxWeight
   Map<String, String?> parseWeight(String? weight) {
     if (weight == null) return {'minWeight': null, 'maxWeight': null};
@@ -57,15 +57,15 @@ class _CategoryScreenState extends State<CategoryScreen> {
     return jsonEncode(a) == jsonEncode(b);
   }
 
-  // Helper function to trigger API with combined parameters
   void triggerApi({
     String? categoryName,
     String? subCategoryName,
     String? purity,
     String? minWeight,
     String? maxWeight,
+    String? search,
   }) {
-    developer.log('Triggering API with params: categoryName=$categoryName, subCategoryName=$subCategoryName, purity=$purity, minWeight=$minWeight, maxWeight=$maxWeight');
+    developer.log('params: categoryName=$categoryName, subCategoryName=$subCategoryName, purity=$purity, minWeight=$minWeight, maxWeight=$maxWeight');
     context.read<DashboardBloc>().add(FetchCategoryListEventHandler(
       token: Prefs.getUserToken() ?? '',
       categoryName: categoryName,
@@ -73,7 +73,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
       purity: purity,
       minWeight: minWeight,
       maxWeight: maxWeight,
-      page: 1,
+      searchQuery: search
+      // page: 1,
     ));
   }
 
@@ -91,7 +92,41 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const CategoryAppBar(),
+      appBar: CategoryAppBar(
+        onSearchSubmitted: (query) {
+          setState(() {
+            searchQuery = query;
+            // currentPage = 1;
+            // hasMore = true;
+            products.clear();
+          });
+
+          final mainCategory =
+          (selectedCategories['main'] as List).isNotEmpty ? selectedCategories['main'][0] : null;
+          final subCategory = mainCategory != null &&
+              selectedCategories['side'] != null &&
+              (selectedCategories['side'][mainCategory] as List?)?.isNotEmpty == true
+              ? selectedCategories['side'][mainCategory][0]
+              : null;
+          final purity = selectedFilters['side']?['Purity']?.isNotEmpty == true
+              ? selectedFilters['side']['Purity'][0]
+              : null;
+          final weight = selectedFilters['side']?['Weight']?.isNotEmpty == true
+              ? selectedFilters['side']['Weight'][0]
+              : null;
+          final weightParams = parseWeight(weight);
+
+          triggerApi(
+            categoryName: mainCategory,
+            subCategoryName: subCategory,
+            purity: purity,
+            minWeight: weightParams['minWeight'],
+            maxWeight: weightParams['maxWeight'],
+            // page: currentPage,
+            search: searchQuery,
+          );
+        },
+      ),
       body: BlocListener<DashboardBloc, DashboardState>(
         listener: (context, state) {
           // ------------------ PRODUCT LIST STATES ------------------
@@ -173,10 +208,10 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
           // ------------------ CART ERROR STATES ------------------
           else if (state is AddToCartError) {
-            TopSnackbar.show(context, message: 'Failed to add item to cart', isError: true);
+            TopSnackbar.show(context, message: state.message, isError: true);
           }
           else if (state is AddOrRemoveCartError) {
-            TopSnackbar.show(context, message: 'Failed to update cart', isError: true);
+            TopSnackbar.show(context, message: state.message, isError: true);
           }
         },
         child: Padding(
@@ -355,7 +390,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                         imagePath: (product['images'] is List && (product['images'] as List).isNotEmpty)
                             ? '${ApiConstants.imageUrl}${product['images'][0]}'
                             : ImageAssets.RingImage,
-                        stockLabel: '${product['stock']?.toString() ?? '0'} Stock Left',
+                        stockLabel: product['stock'] ?? 0,
                         onAdd: () {
                           context.read<DashboardBloc>().add(AddToCartEventHandler(productId: product['_id']));
                         },

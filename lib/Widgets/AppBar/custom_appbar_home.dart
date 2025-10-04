@@ -88,7 +88,9 @@ class _CustomAppBarHomeState extends State<CustomAppBarHome>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Image.asset(ImageAssets.appLogo, height: height * 0.07),
-              Container(
+              livePrices.isEmpty
+                  ? SizedBox.shrink()
+                  : Container(
                 padding: EdgeInsets.symmetric(horizontal: width * 0.04, vertical: height * 0.008),
                 decoration: BoxDecoration(
                   color: AppColors.background,
@@ -107,7 +109,7 @@ class _CustomAppBarHomeState extends State<CustomAppBarHome>
                     SizedBox(width: width * 0.03),
                     SizedBox(
                       width: width * 0.25,
-                      child: isLoading || livePrices.isEmpty
+                      child: isLoading
                           ? Shimmer.fromColors(
                         baseColor: Colors.grey.shade300,
                         highlightColor: Colors.grey.shade100,
@@ -156,6 +158,8 @@ class _CustomAppBarHomeState extends State<CustomAppBarHome>
                             : (value) {
                           setState(() => selectedCarat = value!);
                         },
+                        underline: SizedBox(), // ✅ removes the default underline
+
                       ),
                     )
 

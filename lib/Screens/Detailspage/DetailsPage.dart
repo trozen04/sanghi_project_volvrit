@@ -9,7 +9,6 @@ import 'package:gold_project/ShimmersAndAnimations/Shimmers.dart';
 import 'package:gold_project/Utils/ApiConstants.dart';
 import 'package:gold_project/Utils/AppColors.dart';
 import 'package:gold_project/Utils/FFontStyles.dart';
-import 'package:gold_project/Utils/ImageAssets.dart';
 import 'package:gold_project/Widgets/AppBar/CustomAppBar.dart';
 import 'package:gold_project/Widgets/OtherReusableWidgets.dart';
 import 'package:gold_project/Widgets/TopSnackbar.dart';
@@ -30,7 +29,7 @@ class _DetailsPageState extends State<DetailsPage> {
   int _quantity = 0;
   String? _currentImage; // can be null until product loads
   bool isLoading = false;
-  Map<String, dynamic>? product; // product data from API
+  Map<String, dynamic>? product;
 
   @override
   void initState() {
@@ -88,8 +87,9 @@ class _DetailsPageState extends State<DetailsPage> {
               if (state is ProductDetailsLoading) {
                 setState(() => isLoading = true);
               } else if (state is ProductDetailsLoaded) {
-                developer.log('ProductDetailsLoaded: ${state.product}');
+                developer.log('ProductDetailsLoaded: ${state.quantity}');
                 setState(() {
+                  _quantity = state.quantity;
                   product = state.product;
                   isLoading = false;
                   final imgs = (product?['images'] as List<dynamic>?);
@@ -133,7 +133,7 @@ class _DetailsPageState extends State<DetailsPage> {
               if(state is AddOrRemoveCartSuccess) {
                 var responseData = state.response;
                 var cartData = responseData['cart'];
-                developer.log('AddOrRemoveCartSuccess responseData: ${responseData}');
+                developer.log('AddOrRemoveCartSuccess responseData: $responseData');
                 setState(() {
                   _quantity = (cartData['items'] != null && cartData['items'].isNotEmpty)
                       ? cartData['items'][0]['quantity'] ?? 0
@@ -147,7 +147,7 @@ class _DetailsPageState extends State<DetailsPage> {
         child: isLoading
             ? DetailsPageShimmer()
             : product == null
-            ? Center(child: Text("No product found"))
+            ? Center(child: Text("No product found. Please try again later.",maxLines: 2, style: FFontStyles.noAccountText(14),))
             : SingleChildScrollView(
           child: StaggeredReveal(
             initialDelay: const Duration(milliseconds: 80),

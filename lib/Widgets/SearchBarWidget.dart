@@ -4,7 +4,9 @@ import 'package:gold_project/Utils/FFontStyles.dart';
 import 'package:gold_project/Utils/ImageAssets.dart';
 
 class SearchBarWidget extends StatefulWidget {
-  const SearchBarWidget({super.key});
+  final Function(String)? onSearch; // <-- callback to parent
+
+  const SearchBarWidget({super.key, this.onSearch});
 
   @override
   State<SearchBarWidget> createState() => _SearchBarWidgetState();
@@ -46,7 +48,6 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
   }
 
   void _showOverlay() {
-    // Only show if we have search history and no existing overlay
     if (searchHistory.isEmpty || _overlayEntry != null) return;
 
     final overlay = Overlay.of(context);
@@ -83,6 +84,8 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                       _controller.text = query;
                       _removeOverlay();
                       _focusNode.unfocus();
+                      widget.onSearch?.call(query); // <-- call API
+                      _addToSearchHistory(query);
                     },
                   )),
                 ],
@@ -129,6 +132,8 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
         contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 12),
       ),
       onSubmitted: (value) {
+        if (value.isEmpty) return;
+        widget.onSearch?.call(value); // <-- trigger API
         _addToSearchHistory(value);
         _controller.clear();
         _focusNode.unfocus();
@@ -139,3 +144,4 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
     );
   }
 }
+

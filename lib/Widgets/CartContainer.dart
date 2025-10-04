@@ -86,8 +86,8 @@ class CartContainer extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(title, style: FFontStyles.cartTitle(16), overflow: TextOverflow.ellipsis),
-                  CartInfoRow(label: 'Purity', value: purity),
-                  CartInfoRow(label: 'Weight', value: weight ?? ''),
+                  CartInfoRow(label: 'Purity', value: formatPurity(purity)),
+                  CartInfoRow(label: 'Weight', value: formatWeight(weight)),
                   SizedBox(height: height * 0.01),
                 ],
               ),

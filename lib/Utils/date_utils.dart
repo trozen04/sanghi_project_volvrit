@@ -15,3 +15,14 @@ String formatNotificationDate(String? isoDate) {
     return '';
   }
 }
+
+String formatDate(String? dateString) {
+  if (dateString == null || dateString.isEmpty) {
+    return '';
+  }
+
+  final date = DateTime.tryParse(dateString) ?? DateTime.now();
+
+  // Format as: 12-Sep-2025
+  return DateFormat('d-MMM-yyyy').format(date);
+}

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gold_project/Routes/app_routes.dart';
+import 'package:gold_project/Screens/HomeScreens/Catalog/CategorySearchPage.dart';
 import 'package:gold_project/Utils/AppColors.dart';
 import 'package:gold_project/Utils/AppGraidients.dart';
 import 'package:gold_project/Utils/FFontStyles.dart';
@@ -8,11 +9,14 @@ import 'package:gold_project/Utils/ImageAssets.dart';
 class CategoryAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showCenterText;
   final String? centerText;
+  final Function(String)? onSearchSubmitted; // <-- callback
 
   const CategoryAppBar({
     super.key,
     this.showCenterText = false,
     this.centerText,
+    this.onSearchSubmitted,
+
   });
 
   @override
@@ -62,7 +66,7 @@ class CategoryAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              _circleIcon(Icons.search_rounded, width),
+              _circleIcon(Icons.search_rounded, width, context),
             ],
           ),
         ],
@@ -70,16 +74,34 @@ class CategoryAppBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  Widget _circleIcon(IconData icon, double width) {
-    return Container(
-      width: width * 0.1,
-      height: width * 0.1,
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.background, width: 1.5),
-        shape: BoxShape.circle,
-        color: Colors.transparent,
+  Widget _circleIcon(IconData icon, double width, BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CategorySearchPage()),
+        );
+
+        if (result != null && result is String) {
+          print('User searched for: $result');
+
+          // <-- Call the callback here so CategoryScreen gets the query
+          if (onSearchSubmitted != null) {
+            onSearchSubmitted!(result);
+          }
+        }
+      },
+      child: Container(
+        width: width * 0.1,
+        height: width * 0.1,
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.background, width: 1.5),
+          shape: BoxShape.circle,
+          color: Colors.transparent,
+        ),
+        child: Icon(icon, color: AppColors.background, size: width * 0.06),
       ),
-      child: Icon(icon, color: AppColors.background, size: width * 0.06),
     );
   }
+
 }

@@ -230,7 +230,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       text: 'Submit',
                       onPressed: () => _onSave(context),
                       width: width,
-                        isLoading: isLoading,
+                      isLoading: isLoading,
                     ),
                   ],
                 ),

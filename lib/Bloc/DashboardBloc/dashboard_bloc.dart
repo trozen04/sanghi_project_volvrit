@@ -16,6 +16,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       emit(GoldValueLoading());
       try {
         final url = ApiConstants.baseUrl + ApiConstants.goldPrice;
+        print('url: $url');
 
         final res = await http.get(
           Uri.parse(url),
@@ -25,6 +26,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
           },
         );
         final responseData = jsonDecode(res.body);
+        print('responseData: $responseData');
         if (res.statusCode == 200 || res.statusCode == 201) {
           final data = responseData['data'];
           emit(GoldValueLoaded(data));
@@ -50,13 +52,14 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
           'minWeight': event.minWeight,
           'maxWeight': event.maxWeight,
           'purity': event.purity,
+          'search': event.searchQuery,
         };
         final params = _filterNulls(body);
-        //developer.log('param: $params');
+        developer.log('param: $params');
 
         final uri = Uri.parse(ApiConstants.baseUrl + ApiConstants.productList)
             .replace(queryParameters: params);
-       // developer.log('Full URL: ${uri.toString()}');
+        developer.log('Full URL: ${uri.toString()}');
 
 
         final res = await http.get(
@@ -68,13 +71,15 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         );
 
         final data = jsonDecode(res.body);
+        developer.log('Full data: ${data}');
+
         if (res.statusCode == 200 || res.statusCode == 201) {
           emit(ProductListLoaded(data));
         } else {
           emit(ProductListError(data['message'] ?? 'Failed to load products'));
         }
       } catch (e) {
-        emit(ProductListError('Something went wrong. Please try again later.'));
+        emit(ProductListError('Oops! Something went wrong. Please try again later.'));
       }
     });
 
@@ -86,7 +91,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
 
         final userId = Prefs.getUserId() ?? '';
         final url = '${ApiConstants.baseUrl}${ApiConstants.myCart}$userId';
-        developer.log('cart url: ${url}');
+        developer.log('cart url: $url');
 
         final res = await http.get(
             Uri.parse(url),
@@ -96,15 +101,18 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
           },
         );
         developer.log('cart Items: ${res.body}');
+        developer.log('cart statusCode: ${res.statusCode}');
 
         final data = jsonDecode(res.body);
         if (res.statusCode == 200 || res.statusCode == 201) {
           emit(CartPageLoaded(data));
+        } else if(res.statusCode == 404){
+          emit(CartPageError('Your cart is empty.'));
         } else {
-          emit(CartPageError(data['message'] ?? 'Failed to load cart'));
+          emit(CartPageError(data['message'] ?? 'Failed to load cart.'));
         }
       } catch (e) {
-        emit(CartPageError(e.toString()));
+        emit(CartPageError('Oops! Something went wrong. Please try again later.'));
       }
     });
 
@@ -169,7 +177,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
           emit(removeFromCartError(data['message'] ?? 'Failed to add to cart'));
         }
       } catch (e) {
-        emit(removeFromCartError('Something went wrong. Please try again later.'));
+        emit(removeFromCartError('Oops! Something went wrong. Please try again later.'));
       }
     });
 
@@ -202,7 +210,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
           emit(AddOrRemoveCartError(data['message'] ?? 'Failed to add to cart'));
         }
       } catch (e) {
-        emit(AddOrRemoveCartError('Something went wrong. Please try again later.'));
+        emit(AddOrRemoveCartError('Oops! Something went wrong. Please try again later.'));
       }
     });
 
@@ -225,13 +233,13 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         developer.log('SubmitCart Response: ${res.body}');
         final data = jsonDecode(res.body);
         if (res.statusCode == 200 || res.statusCode == 201) {
-          developer.log('SubmitCart data: ${data}');
+          developer.log('SubmitCart data: $data');
           emit(SubmitCartSuccess(data));
         } else {
           emit(SubmitCartError(data['message'] ?? 'Failed to add to cart'));
         }
       } catch (e) {
-        emit(SubmitCartError('Something went wrong. Please try again later.'));
+        emit(SubmitCartError('Oops! Something went wrong. Please try again later.'));
       }
     });
 
@@ -250,14 +258,16 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         );
 
         final data = jsonDecode(res.body);
+        developer.log('ProductDetailsLoaded data: ${res.body}');
+
         if (res.statusCode == 200 || res.statusCode == 201) {
-          emit(ProductDetailsLoaded(data['product']));
+          emit(ProductDetailsLoaded(data['product'], data["cartQuantity"]));
         } else {
           emit(ProductDetailsError(data['message'] ?? 'Failed to load details'));
         }
       } catch (e) {
         developer.log(e.toString());
-        emit(ProductDetailsError('Something went wrong. Please try again later.'));
+        emit(ProductDetailsError('Oops! Something went wrong. Please try again later.'));
       }
     });
 

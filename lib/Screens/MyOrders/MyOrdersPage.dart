@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gold_project/Bloc/MyOrders/my_orders_bloc.dart';
@@ -7,7 +5,7 @@ import 'package:gold_project/Routes/app_routes.dart';
 import 'package:gold_project/ShimmersAndAnimations/Shimmers.dart';
 import 'package:gold_project/Utils/AppColors.dart';
 import 'package:gold_project/Utils/FFontStyles.dart';
-import 'package:gold_project/Utils/ImageAssets.dart';
+import 'package:gold_project/Utils/date_utils.dart';
 import 'package:gold_project/Widgets/AppBar/CustomAppBar.dart';
 import 'package:gold_project/Widgets/OtherReusableWidgets.dart';
 import 'package:gold_project/Widgets/TopSnackbar.dart';
@@ -42,6 +40,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
       }
     });
   }
+
 
   void fetchOrders() {
     context.read<MyOrdersBloc>().add(FetchOrdersEventHandler(
@@ -136,65 +135,69 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                 child: isLoading && orders.isEmpty
                     ? MyOrdersPageShimmer()
                     : orders.isEmpty
-                    ? Center(child: Text("No orders found"))
-                    : ListView.builder(
-                  controller: _scrollController,
-                  itemCount: orders.length + (hasMore ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    if (index >= orders.length) {
-                      // Show loading indicator at bottom
-                      return Padding(
-                        padding: EdgeInsets.symmetric(vertical: 10),
-                        child: Center(
-                            child: CircularProgressIndicator(
-                              color: AppColors.primary,
-                            )),
-                      );
+                    ? Center(child: Text("You don't have any orders yet.",maxLines: 2, style: FFontStyles.noAccountText(14)))
+                    : Builder(
+                  builder: (context) {
+                    // Filter orders based on selected tab
+                    final filteredOrders = orders.where((order) {
+                      final status = (order['status'] ?? '').toString().toLowerCase();
+                      return showPending ? status == 'pending' : status == 'approved';
+                    }).toList();
+
+                    if (filteredOrders.isEmpty) {
+                      return Center(child: Text("You don't have any orders yet.",maxLines: 2, style: FFontStyles.noAccountText(14)));
                     }
 
-                    final order = orders[index];
+                    return ListView.builder(
+                      controller: _scrollController,
+                      itemCount: filteredOrders.length + (hasMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index >= filteredOrders.length) {
+                          return Padding(
+                            padding: EdgeInsets.symmetric(vertical: 10),
+                            child: Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primary,
+                                )),
+                          );
+                        }
 
-                    // Format date
-                    final createdAt =
-                        DateTime.tryParse(order['createdAt'] ?? '') ??
-                            DateTime.now();
-                    final formattedDate =
-                        "${createdAt.day}-${createdAt.month}-${createdAt.year}";
+                        final order = filteredOrders[index];
 
-                    // Map items to images (placeholder images)
-                    final images = (order['items'] as List)
-                        .expand<String>((item) {
-                      final imgs = item['product']['images'] as List?;
-                      if (imgs != null && imgs.isNotEmpty) {
-                        return imgs.map((e) => e.toString().replaceAll("\\", "/"));
-                      }
-                      return [];
-                    })
-                        .toList();
+                        final images = (order['items'] as List)
+                            .expand<String>((item) {
+                          final imgs = item['product']['images'] as List?;
+                          if (imgs != null && imgs.isNotEmpty) {
+                            return imgs.map((e) => e.toString().replaceAll("\\", "/"));
+                          }
+                          return [];
+                        }).toList();
 
-
-                    return Padding(
-                      padding: EdgeInsets.only(bottom: height * 0.02),
-                      child: GestureDetector(
-                        onTap: () => Navigator.pushNamed(
-                          context,
-                          AppRoutes.myOrderDetailsPage,
-                          arguments: order['orderId'],
-                        ),
-                        child: OrderCard(
-                          orderId: order['orderId'] ?? '',
-                          date: formattedDate,
-                          status: order['status'] ?? '',
-                          statusColor: order['status'] == 'pending'
-                              ? AppColors.myOrdersPending
-                              : AppColors.myOrdersApproved,
-                          images: images,
-                        ),
-                      ),
+                        return Padding(
+                          padding: EdgeInsets.only(bottom: height * 0.02),
+                          child: GestureDetector(
+                            onTap: () => Navigator.pushNamed(
+                              context,
+                              AppRoutes.myOrderDetailsPage,
+                              arguments: order['_id'],
+                            ),
+                            child: OrderCard(
+                              orderId: order['_id'] ?? '',
+                              date: formatDate(order['createdAt']),
+                              status: order['status'] ?? '',
+                              statusColor: order['status'].toString().toLowerCase() == 'pending'
+                                  ? AppColors.myOrdersPending
+                                  : AppColors.myOrdersApproved,
+                              images: images,
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
               ),
+
             ],
           ),
         ),

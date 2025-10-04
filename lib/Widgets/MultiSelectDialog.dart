@@ -50,10 +50,12 @@ Future<dynamic> showMultiSelectDropdown({
 
     if (!completer.isCompleted) {
       completer.complete({
-        'main': mainSelected,
-        'side': sideSelectedMap,
+        'main': List<String>.from(mainSelected), // force it into a List
+        'side': Map<String, List<String>>.from(sideSelectedMap),
       });
     }
+
+
   }
 
   // Tap-outside barrier
@@ -122,8 +124,8 @@ Future<dynamic> showMultiSelectDropdown({
                           title: Text(subItem, style: FFontStyles.filters(14)),
                           controlAffinity: ListTileControlAffinity.leading,
                           checkColor: AppColors.primary,
-                          fillColor: MaterialStateProperty.resolveWith((_) => AppColors.checkboxColor),
-                          side: MaterialStateBorderSide.resolveWith((_) => BorderSide.none),
+                          fillColor: WidgetStateProperty.resolveWith((_) => AppColors.checkboxColor),
+                          side: WidgetStateBorderSide.resolveWith((_) => BorderSide.none),
                           contentPadding: EdgeInsets.zero,
                           visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
                           onChanged: (checked) {
@@ -132,8 +134,11 @@ Future<dynamic> showMultiSelectDropdown({
                                 selectedList.clear();
                                 if (checked == true) selectedList.add(subItem);
                               } else {
-                                if (checked == true) selectedList.add(subItem);
-                                else selectedList.remove(subItem);
+                                if (checked == true) {
+                                  selectedList.add(subItem);
+                                } else {
+                                  selectedList.remove(subItem);
+                                }
                               }
                               sideSelectedMap[item] = List.from(selectedList);
                             });
@@ -198,30 +203,42 @@ Future<dynamic> showMultiSelectDropdown({
                           title: Text(item, style: FFontStyles.filters(14)),
                           controlAffinity: ListTileControlAffinity.leading,
                           checkColor: AppColors.primary,
-                          fillColor: MaterialStateProperty.resolveWith((_) => AppColors.checkboxColor),
-                          side: MaterialStateBorderSide.resolveWith((_) => BorderSide.none),
+                          fillColor: WidgetStateProperty.resolveWith((_) => AppColors.checkboxColor),
+                          side: WidgetStateBorderSide.resolveWith((_) => BorderSide.none),
                           contentPadding: EdgeInsets.zero,
                           visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
                           onChanged: (checked) {
                             setState(() {
                               if (singleSelection) {
                                 mainSelected.clear();
-                                sideSelectedMap.clear(); // Clear subcategories when changing main option
+                                sideSelectedMap.clear();
                                 if (checked == true) mainSelected.add(item);
                               } else {
                                 if (checked == true) {
                                   mainSelected.add(item);
                                 } else {
                                   mainSelected.remove(item);
-                                  sideSelectedMap.remove(item); // Clear sub-options
+                                  sideSelectedMap.remove(item);
                                 }
                               }
                               onSelected(mainSelected);
                             });
 
                             if (!enableSideDropdown) return;
-                            showSideDropdown(item);
+
+                            if (checked == true) {
+                              // Only show if user selected it
+                              showSideDropdown(item);
+                            } else {
+                              // Close only if that category’s side dropdown was open
+                              if (currentSideDropdownItem == item) {
+                                sideEntry?.remove();
+                                sideEntry = null;
+                                currentSideDropdownItem = null;
+                              }
+                            }
                           },
+
                         );
                       }).toList(),
                     );

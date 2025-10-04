@@ -1,9 +1,8 @@
 class ApiConstants {
-  //static String baseUrl = "http://192.168.0.116:3000";
   //static String baseUrl = "http://192.168.0.112:5000";
   //static String imageUrl = "http://192.168.0.112:5000/";
-  static String baseUrl = "http://192.168.0.109:5000";
-  static String imageUrl = "http://192.168.0.109:5000/";
+  static String baseUrl = "http://192.168.1.39:5000";
+  static String imageUrl = "http://192.168.1.39:5000/";
 
   //Auth
   static String login = "/api/user/loginuser";
@@ -23,6 +22,7 @@ class ApiConstants {
 
   //Notification
   static String notification = "/api/notification/user";
+  static String markReadOrRemove = "/api/notification/";
 
   //Profile
   static String getProfile = "/api/user/";
@@ -30,5 +30,6 @@ class ApiConstants {
 
   //Orders
   static String myOrders = "/api/order/";
+  static String myOrderDetails = "/api/order/user/";
 
 }

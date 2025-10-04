@@ -84,7 +84,8 @@ final class SubmitCartError extends DashboardState {
 final class ProductDetailsLoading extends DashboardState {}
 final class ProductDetailsLoaded extends DashboardState {
   final product;
-  ProductDetailsLoaded(this.product);
+  int quantity;
+  ProductDetailsLoaded(this.product, this.quantity);
 }
 final class ProductDetailsError extends DashboardState {
   final String message;

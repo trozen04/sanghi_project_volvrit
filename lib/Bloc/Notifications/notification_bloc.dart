@@ -18,6 +18,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
         // Optional query parameters
         final url = '${ApiConstants.baseUrl}${ApiConstants.notification}';
         developer.log('url: $url,');
+        developer.log('token: ${Prefs.getUserToken()}');
 
         final uri = Uri.parse(url).replace(queryParameters: {
           'page': event.page?.toString() ?? '1',   // default page = 1
@@ -43,8 +44,8 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
           emit(NotificationsError(responseData['message'] ?? 'Failed to fetch notifications'));
         }
       } catch (e) {
-        developer.log('${e.toString()}');
-        emit(NotificationsError('Something went wrong. Please try again later.'));
+        developer.log(e.toString());
+        emit(NotificationsError('Oops! Something went wrong. Please try again later.'));
       }
     });
 
@@ -52,7 +53,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
       emit(NotificationMarking());
       try {
 
-        final url = '${ApiConstants.baseUrl}${ApiConstants.notification}/${event.notificationId}/read';
+        final url = '${ApiConstants.baseUrl}${ApiConstants.markReadOrRemove}${event.notificationId}/read';
         developer.log('url: $url, body');
 
         final res = await http.patch(
@@ -80,7 +81,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
       emit(NotificationRemoveLoading());
       try {
 
-        final url = '${ApiConstants.baseUrl}${ApiConstants.notification}/${event.notificationId}';
+        final url = '${ApiConstants.baseUrl}${ApiConstants.markReadOrRemove}${event.notificationId}';
         developer.log('url: $url,');
 
         final res = await http.patch(

@@ -59,11 +59,12 @@ class _CartPageState extends State<CartPage> {
             setState(() => isLoading = true);
           }
           else if (state is CartPageLoaded) {
+            developer.log('cart data: ${state.cartData}');
             final response = state.cartData['cart'] as Map<String, dynamic>? ?? {};
             final items = response['items'] as List<dynamic>? ?? [];
 
             setState(() {
-              cartItems = items.map((item) {
+              cartItems = items.where((item) => item['product'] != null).map((item) {
                 final product = item['product'] as Map<String, dynamic>;
                 return {
                   '_id': product['_id'],
@@ -79,6 +80,7 @@ class _CartPageState extends State<CartPage> {
               }).toList();
               isLoading = false;
             });
+
           }
           else if (state is removeFromCartLoading) {
             setState(() => isLoading = true);
@@ -115,7 +117,7 @@ class _CartPageState extends State<CartPage> {
             setState(() {
               buttonLoading = false;
             });
-            TopSnackbar.show(context, message: "Something went wrong. Please try again later.", isError: true);
+            TopSnackbar.show(context, message: "Oops! Something went wrong. Please try again later.", isError: true);
 
           }
         },
@@ -127,7 +129,11 @@ class _CartPageState extends State<CartPage> {
             children: [
               Expanded(
                 child: cartItems.isEmpty
-                    ? Center(child: Text('Cart is empty'))
+                    ? Center(child: Text('Your cart is empty.\nPlease add items to place an order.',
+                      maxLines: 3,
+                      textAlign: TextAlign.center,
+                      style: FFontStyles.noAccountText(14),
+                    ))
                     : ListView.builder(
                   itemCount: cartItems.length,
                   itemBuilder: (context, index) {

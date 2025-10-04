@@ -2,7 +2,6 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:gold_project/Bloc/Profile/profile_bloc.dart';
-import 'package:gold_project/Routes/app_routes.dart';
 import 'package:gold_project/Screens/Profile/EditProfilePage.dart';
 import 'package:gold_project/ShimmersAndAnimations/Shimmers.dart';
 import 'package:gold_project/Utils/AppColors.dart';
@@ -31,7 +30,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
     super.initState();
     // Fetch profile initially
     final bloc = context.read<ProfileBloc>();
-    bloc.add(FetchProfileEventHandler(userToken: Prefs.getUserToken()!));
+    bloc.add(FetchProfileEventHandler(userToken: Prefs.getUserToken()));
   }
 
   @override
@@ -90,7 +89,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                   if (result == true) {
                     // Refresh profile via Bloc, do NOT set isLoading manually
                     context.read<ProfileBloc>().add(
-                      FetchProfileEventHandler(userToken: Prefs.getUserToken()!),
+                      FetchProfileEventHandler(userToken: Prefs.getUserToken()),
                     );
                   }
                 },

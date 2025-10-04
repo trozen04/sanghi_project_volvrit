@@ -1,18 +1,14 @@
-import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gold_project/Routes/app_routes.dart';
 import 'package:gold_project/Utils/AppColors.dart';
 import 'package:gold_project/Utils/FFontStyles.dart';
-import 'package:gold_project/Utils/ImageAssets.dart';
-import 'package:gold_project/ShimmersAndAnimations/Shimmers.dart';
 
 class ProductCard extends StatelessWidget {
   final String id;
   final String title;
-  final String imagePath;
-  final String stockLabel;
+  final String? imagePath;
+  final int stockLabel;
   final num cartQuantity;
   final VoidCallback onAdd;
   final VoidCallback? onIncrement;
@@ -22,7 +18,7 @@ class ProductCard extends StatelessWidget {
     super.key,
     required this.id,
     required this.title,
-    required this.imagePath,
+    this.imagePath,
     required this.stockLabel,
     required this.cartQuantity,
     required this.onAdd,
@@ -35,7 +31,7 @@ class ProductCard extends StatelessWidget {
     final size = MediaQuery.of(context).size;
     final width = size.width;
     final height = size.height;
-    String cleanUrl = imagePath.replaceAll('\\', '/').replaceAll(' ', '%20');
+    String cleanUrl = imagePath!.replaceAll('\\', '/').replaceAll(' ', '%20');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,11 +47,14 @@ class ProductCard extends StatelessWidget {
                 height: height * 0.20,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8.0),
+                  border: Border.all(
+                    color: AppColors.primary
+                  )
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8.0),
                   child: Image.network(
-                    imagePath,
+                    imagePath!,
                     fit: BoxFit.cover,
                     width: double.infinity,
                     height: 200,
@@ -97,7 +96,7 @@ class ProductCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8.0),
                 ),
                 child: Text(
-                  stockLabel,
+                  '$stockLabel Stock Left',
                   style: FFontStyles.link(10.0),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -136,27 +135,52 @@ class ProductCard extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    GestureDetector(
-                      onTap: onDecrement,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                        child: Text('-', style: FFontStyles.liveText(16.0)),
+                    // Decrement button
+                    Material(
+                      color: Colors.transparent, // transparent so the container color shows
+                      borderRadius: BorderRadius.circular(8),
+                      child: InkWell(
+                        onTap: onDecrement,
+                        borderRadius: BorderRadius.circular(8),
+                        splashColor: AppColors.primary.withOpacity(0.3),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          alignment: Alignment.center,
+                          child: Text('-', style: FFontStyles.liveText(18.0)),
+                        ),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                      child: Text(cartQuantity.toString(), style: FFontStyles.liveText(14.0)),
+
+                    // Quantity display
+                    Container(
+                      width: 40,
+                      height: 40,
+                      alignment: Alignment.center,
+                      child: Text(cartQuantity.toString(), style: FFontStyles.liveText(16.0)),
                     ),
-                    GestureDetector(
-                      onTap: onIncrement,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                        child: Text('+', style: FFontStyles.liveText(16.0)),
+
+                    // Increment button
+                    Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      child: InkWell(
+                        onTap: onIncrement,
+                        borderRadius: BorderRadius.circular(8),
+                        splashColor: AppColors.primary.withOpacity(0.3),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          alignment: Alignment.center,
+                          child: Text('+', style: FFontStyles.liveText(18.0)),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
+
+
             ),
           ],
         ),

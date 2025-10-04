@@ -14,5 +14,11 @@ final class FetchOrdersEventHandler extends MyOrdersEvent {
 /// Fetch a single order’s details
 final class FetchOrderDetailsEventHandler extends MyOrdersEvent {
   final String orderId;
-  FetchOrderDetailsEventHandler({required this.orderId});
+  final int page;
+
+  FetchOrderDetailsEventHandler({
+    required this.orderId,
+    this.page = 1,
+  });
 }
+
