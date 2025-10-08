@@ -18,6 +18,7 @@ class ProfilePage extends StatelessWidget {
     final width = mediaQuery.size.width;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: CategoryAppBar(showCenterText: true, centerText: 'Profile',),
       body: Column(
         children: [

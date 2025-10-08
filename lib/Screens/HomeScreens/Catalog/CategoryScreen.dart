@@ -159,15 +159,16 @@ class _CategoryScreenState extends State<CategoryScreen> {
             //     products[index]['cartQuantity'] = item != null ? item['quantity'] ?? 0 : 0;
             //   }
             // });
-            final cartItems = responseData['cart']?['items'] as List<dynamic>? ?? [];
 
-            if (cartItems.isNotEmpty) {
-              final addedProductId = cartItems.last['product']; // get the last added product
+            // final cartItems = responseData['cart']?['items'] as List<dynamic>? ?? [];
 
-              setState(() {
-                products.removeWhere((p) => p['_id'] == addedProductId);
-              });
-            }
+            // if (cartItems.isNotEmpty) {
+            //   final addedProductId = cartItems.last['product']; // get the last added product
+            //
+            //   setState(() {
+            //     products.removeWhere((p) => p['_id'] == addedProductId);
+            //   });
+            // }
             TopSnackbar.show(context, message: 'Cart updated successfully');
           } else if (state is AddOrRemoveCartSuccess) {
             final responseData = state.response;

@@ -78,6 +78,7 @@ class _DetailsPageState extends State<DetailsPage> {
         product?['description'] ?? "No description available.";
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: CustomAppBar(title: 'Details'),
       body: MultiBlocListener(
         listeners: [

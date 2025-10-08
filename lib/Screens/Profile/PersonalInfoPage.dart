@@ -40,6 +40,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
     final width = mediaQuery.size.width;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: const CustomAppBar(title: 'Personal Info'),
       body: BlocListener<ProfileBloc, ProfileState>(
         listener: (context, state) {
@@ -126,7 +127,6 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
           ),
         ),
       ),
-      backgroundColor: AppColors.background,
     );
   }
 }

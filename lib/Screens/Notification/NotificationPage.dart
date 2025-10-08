@@ -97,6 +97,7 @@ class _NotificationPageState extends State<NotificationPage> {
     double width = MediaQuery.of(context).size.width;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: CustomAppBar(title: 'Notification'),
       body: BlocListener<NotificationBloc, NotificationState>(
         listener: (context, state) {

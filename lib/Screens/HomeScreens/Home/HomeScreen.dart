@@ -79,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final width = MediaQuery.of(context).size.width;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       body: BlocListener<DashboardBloc, DashboardState>(
         listener: (context, state) {
           // ------------------ PRODUCT LIST STATES ------------------
@@ -362,9 +363,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 stockLabel: product['stock'] ?? 0,
                                 onAdd: () {
                                   context.read<DashboardBloc>().add(AddToCartEventHandler(productId: product['_id']));
-                                  setState(() {
-                                    currentProducts.removeAt(index);
-                                  });
+                                  // setState(() {
+                                  //   currentProducts.removeAt(index);
+                                  // });
                                 },
                                 onIncrement: () {
                                   context.read<DashboardBloc>().add(AddOrRemoveCartEventHandler(

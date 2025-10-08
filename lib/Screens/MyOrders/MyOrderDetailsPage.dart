@@ -38,6 +38,7 @@ class _MyOrderDetailsPageState extends State<MyOrderDetailsPage> {
     double width = MediaQuery.of(context).size.width;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: CustomAppBar(title: 'My Orders'),
       body: BlocListener<MyOrdersBloc, MyOrdersState>(
         listener: (context, state) {
