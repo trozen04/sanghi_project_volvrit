@@ -8,13 +8,13 @@ Future<dynamic> showMultiSelectDropdown({
   required BuildContext context,
   required GlobalKey key,
   required String title,
-  required List<String> options, // main dropdown options
-  dynamic initiallySelected, // Map<String, List<String>> for main and side
-  required Function(List<String>) onSelected,
+  required List<String> options,
+  dynamic initiallySelected,
+  required Function(List<String>, Map<String, List<String>>) onSelected,
   bool enableSideDropdown = false,
   bool singleSelection = false,
-  bool singleSideSelection = false, // Single selection for side dropdown
-  Map<String, List<String>> sideOptionsMap = const {}, // per-main-item sub-options
+  bool singleSideSelection = false,
+  Map<String, List<String>> sideOptionsMap = const {},
 }) async {
   final List<String> mainSelected = initiallySelected is Map
       ? List<String>.from(initiallySelected['main'] ?? [])
@@ -35,7 +35,7 @@ Future<dynamic> showMultiSelectDropdown({
   OverlayEntry? sideEntry;
   late OverlayEntry barrier;
   late void Function(void Function()) mainSetState;
-  String? currentSideDropdownItem; // Track current side dropdown category
+  String? currentSideDropdownItem;
 
   final completer = Completer<dynamic>();
 
@@ -49,16 +49,15 @@ Future<dynamic> showMultiSelectDropdown({
     if (barrier.mounted) barrier.remove();
 
     if (!completer.isCompleted) {
-      completer.complete({
-        'main': List<String>.from(mainSelected), // force it into a List
+      final result = {
+        'main': List<String>.from(mainSelected),
         'side': Map<String, List<String>>.from(sideSelectedMap),
-      });
+      };
+      developer.log('Completing dropdown with result: $result');
+      completer.complete(result);
     }
-
-
   }
 
-  // Tap-outside barrier
   barrier = OverlayEntry(
     builder: (_) => GestureDetector(
       onTap: removeAll,
@@ -86,12 +85,15 @@ Future<dynamic> showMultiSelectDropdown({
       return;
     }
 
-    currentSideDropdownItem = item;
+    // Close any existing side dropdown before opening a new one
     if (sideEntry?.mounted ?? false) {
+      developer.log('Hiding existing side dropdown for $currentSideDropdownItem');
       sideEntry?.remove();
       sideEntry = null;
+      currentSideDropdownItem = null;
     }
 
+    currentSideDropdownItem = item;
     sideEntry = OverlayEntry(
       builder: (_) {
         double sideLeft = offset.dx + size.width + (MediaQuery.of(context).size.width * 0.07);
@@ -131,18 +133,32 @@ Future<dynamic> showMultiSelectDropdown({
                           onChanged: (checked) {
                             setStateSide(() {
                               if (singleSideSelection) {
+                                developer.log('Single side selection mode: Clearing previous side selections for $item');
                                 selectedList.clear();
-                                if (checked == true) selectedList.add(subItem);
-                              } else {
                                 if (checked == true) {
+                                  developer.log('Selecting side item: $subItem for main item: $item');
                                   selectedList.add(subItem);
                                 } else {
+                                  developer.log('Unselecting side item: $subItem for main item: $item (single side selection mode)');
+                                }
+                              } else {
+                                if (checked == true) {
+                                  developer.log('Selecting side item: $subItem for main item: $item');
+                                  selectedList.add(subItem);
+                                } else {
+                                  developer.log('Unselecting side item: $subItem for main item: $item');
                                   selectedList.remove(subItem);
                                 }
                               }
                               sideSelectedMap[item] = List.from(selectedList);
+                              developer.log('Side selections updated for $item: $selectedList');
                             });
+
+                            developer.log('Refreshing main dropdown after side selection change');
                             mainSetState(() {});
+
+                            developer.log('Triggering onSelected with main: $mainSelected, side: $sideSelectedMap');
+                            onSelected(mainSelected, sideSelectedMap);
                           },
                         );
                       }).toList(),
@@ -186,14 +202,6 @@ Future<dynamic> showMultiSelectDropdown({
                 child: StatefulBuilder(
                   builder: (ctx, setState) {
                     mainSetState = setState;
-                    // Show side dropdown for selected category on initial render
-                    if (enableSideDropdown && mainSelected.isNotEmpty && sideOptionsMap.containsKey(mainSelected.first)) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (currentSideDropdownItem != mainSelected.first) {
-                          showSideDropdown(mainSelected.first);
-                        }
-                      });
-                    }
                     return Column(
                       mainAxisSize: MainAxisSize.min,
                       children: options.map((item) {
@@ -210,35 +218,59 @@ Future<dynamic> showMultiSelectDropdown({
                           onChanged: (checked) {
                             setState(() {
                               if (singleSelection) {
+                                developer.log('Single selection mode: Clearing previous selections');
                                 mainSelected.clear();
                                 sideSelectedMap.clear();
-                                if (checked == true) mainSelected.add(item);
-                              } else {
                                 if (checked == true) {
+                                  developer.log('Selecting main item: $item');
                                   mainSelected.add(item);
                                 } else {
+                                  developer.log('Unselecting main item: $item (single selection mode)');
+                                }
+                              } else {
+                                if (checked == true) {
+                                  developer.log('Selecting main item: $item');
+                                  mainSelected.add(item);
+                                } else {
+                                  developer.log('Unselecting main item: $item');
                                   mainSelected.remove(item);
                                   sideSelectedMap.remove(item);
+                                  developer.log('Removed side selections for $item');
                                 }
                               }
-                              onSelected(mainSelected);
+                              developer.log('Main selections updated: $mainSelected');
+                              onSelected(mainSelected, sideSelectedMap);
                             });
 
-                            if (!enableSideDropdown) return;
+                            if (!enableSideDropdown) {
+                              developer.log('Side dropdown disabled, skipping side dropdown logic');
+                              return;
+                            }
 
                             if (checked == true) {
-                              // Only show if user selected it
-                              showSideDropdown(item);
-                            } else {
-                              // Close only if that category’s side dropdown was open
-                              if (currentSideDropdownItem == item) {
+                              developer.log('Closing any existing side dropdown before opening for $item');
+                              if (sideEntry?.mounted ?? false) {
+                                developer.log('Hiding existing side dropdown for $currentSideDropdownItem');
                                 sideEntry?.remove();
                                 sideEntry = null;
                                 currentSideDropdownItem = null;
                               }
+                              developer.log('Opening side dropdown for selected item: $item');
+                              showSideDropdown(item);
+                            } else {
+                              if (currentSideDropdownItem == item) {
+                                developer.log('Closing side dropdown for unselected item: $item');
+                                sideEntry?.remove();
+                                sideEntry = null;
+                                currentSideDropdownItem = null;
+                              }
+                              // Show side dropdown for the last selected main item, if any
+                              if (mainSelected.isNotEmpty) {
+                                developer.log('Switching to side dropdown for last selected item: ${mainSelected.last}');
+                                showSideDropdown(mainSelected.last);
+                              }
                             }
                           },
-
                         );
                       }).toList(),
                     );

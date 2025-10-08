@@ -17,14 +17,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shimmer/shimmer.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final String searchQuery;
+  const HomeScreen({super.key, this.searchQuery = ''});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  var categories = []; // Dynamic categories from state.responseData
+  var categories = [];
   String selectedCategory = ''; // Default to empty, will set after data load
   bool isLoading = true; // Start with loading state for categories
   bool isLoadingProducts = false; // Loading state for products
@@ -33,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int totalPages = 1; // Total pages from API response
   List<Map<String, dynamic>> currentProducts = []; // Products for selected category
   bool isCategoriesLoaded = false; // Track if categories are loaded
+  String searchQuery = '';
 
   @override
   void initState() {
@@ -42,6 +44,14 @@ class _HomeScreenState extends State<HomeScreen> {
       context.read<DashboardBloc>().add(FetchGoldValueEventHandler());
       context.read<DashboardBloc>().add(FetchCategoryListEventHandler(token: token));
     });
+  }
+
+  @override
+  void didUpdateWidget(HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.searchQuery != oldWidget.searchQuery) {
+      fetchProducts(selectedCategory, searchQuery: widget.searchQuery);
+    }
   }
 
   void fetchToken() {
@@ -69,7 +79,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final width = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      appBar: CustomAppBarHome(),
       body: BlocListener<DashboardBloc, DashboardState>(
         listener: (context, state) {
           // ------------------ PRODUCT LIST STATES ------------------
@@ -196,34 +205,34 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SearchBarWidget(
-                          onSearch: (query) {
-                            setState(() {
-                              currentPage = 1;
-                              currentProducts.clear();
-                            });
-                            fetchProducts(selectedCategory, page: 1, searchQuery: query); // <-- pass query
-                          },
-                        ),
-                      ),
-
-                      SizedBox(width: width * 0.03),
-                      GestureDetector(
-                        onTap: () => Navigator.pushNamed(context, AppRoutes.notificationPage),
-                        child: SizedBox(
-                          height: height * 0.05,
-                          child: Image.asset(
-                            ImageAssets.notificationIcon,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: height * 0.01),
+                  // Row(
+                  //   children: [
+                  //     Expanded(
+                  //       child: SearchBarWidget(
+                  //         onSearch: (query) {
+                  //           setState(() {
+                  //             currentPage = 1;
+                  //             currentProducts.clear();
+                  //           });
+                  //           fetchProducts(selectedCategory, page: 1, searchQuery: query); // <-- pass query
+                  //         },
+                  //       ),
+                  //     ),
+                  //
+                  //     SizedBox(width: width * 0.03),
+                  //     GestureDetector(
+                  //       onTap: () => Navigator.pushNamed(context, AppRoutes.notificationPage),
+                  //       child: SizedBox(
+                  //         height: height * 0.05,
+                  //         child: Image.asset(
+                  //           ImageAssets.notificationIcon,
+                  //           fit: BoxFit.contain,
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ],
+                  // ),
+                  // SizedBox(height: height * 0.01),
                   Text('Categories', style: FFontStyles.titleText(18.0)),
                   SizedBox(height: height * 0.01),
                   isLoading
@@ -344,7 +353,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               final productImage = (product['images'] as List?)?.isNotEmpty ?? false
                                   ? ApiConstants.imageUrl +
                                   ((product['images'] as List)[0] as String).replaceAll('\\', '/')
-                                  : ImageAssets.EarringImage;
+                                  : null;
 
                               return ProductCard(
                                 id: product['_id'],
@@ -353,6 +362,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 stockLabel: product['stock'] ?? 0,
                                 onAdd: () {
                                   context.read<DashboardBloc>().add(AddToCartEventHandler(productId: product['_id']));
+                                  setState(() {
+                                    currentProducts.removeAt(index);
+                                  });
                                 },
                                 onIncrement: () {
                                   context.read<DashboardBloc>().add(AddOrRemoveCartEventHandler(
@@ -363,6 +375,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                       productId: product['_id'], action: 'decrease'));
                                 },
                                 cartQuantity: product['cartQuantity'] ?? 0,
+                                onViewCart: () {
+                                  Navigator.pushNamed(context, AppRoutes.cartPage);
+                                },
                               );
                             },
                           ),

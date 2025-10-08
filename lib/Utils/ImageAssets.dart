@@ -2,11 +2,6 @@ class ImageAssets {
   static const String appLogo = "assets/images/SanghiLogo.png";
   static const String LoginBG = "assets/images/LoginBG.png";
   static const String liveIcon = "assets/images/liveIcon.png";
-  static const String RingImage = "assets/images/RingImage.png";
-  static const String ringImage1 = "assets/images/ringImage1.png";
-  static const String ringImage2 = "assets/images/ringImage2.png";
-  static const String ringDetails = "assets/images/ringDetails.png";
-  static const String EarringImage = "assets/images/EarringImage.png";
   static const String cartNotSelected = "assets/images/cartNotSelected.png";
   static const String homeNotSelected = "assets/images/homeNotSelected.png";
   static const String categoryNotSelected = "assets/images/categoryNotSelected.png";

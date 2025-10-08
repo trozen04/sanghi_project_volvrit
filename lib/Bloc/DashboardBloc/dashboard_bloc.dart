@@ -48,11 +48,11 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         final body = {
           'categoryname': event.categoryName,
           'subcategoryname': event.subCategoryName,
-          'page': event.page,
           'minWeight': event.minWeight,
           'maxWeight': event.maxWeight,
           'purity': event.purity,
           'search': event.searchQuery,
+          'limit': '1000',
         };
         final params = _filterNulls(body);
         developer.log('param: $params');
@@ -71,7 +71,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         );
 
         final data = jsonDecode(res.body);
-        developer.log('Full data: ${data}');
+        //developer.log('Full data: ${data}');
 
         if (res.statusCode == 200 || res.statusCode == 201) {
           emit(ProductListLoaded(data));
@@ -151,7 +151,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
 
     // ---------------- Remove From CART ----------------
     on<RemoveFromCartEventHandler>((event, emit) async {
-      emit(removeFromCartLoading());
+      emit(removeFromCartLoading(productId: event.productId));
       try {
         final body = {
           'userId' : Prefs.getUserId(),
@@ -183,7 +183,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
 
     // ---------------- Add or Remove From CART ----------------
     on<AddOrRemoveCartEventHandler>((event, emit) async {
-      emit(removeFromCartLoading());
+      emit(AddOrRemoveFromCartLoading());
       try {
         final body = {
           'userId' : Prefs.getUserId(),

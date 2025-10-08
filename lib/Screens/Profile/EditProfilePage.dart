@@ -33,7 +33,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   bool _businessNameError = false;
   bool _addressError = false;
   bool _emailError = false;
-
+  late Map<String, String> _originalData;
   bool isLoading = false;
 
   @override
@@ -49,7 +49,26 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _gst = TextEditingController(text: profileData['gstno'] ?? '');
     _address = TextEditingController(text: profileData['bussinessaddress'] ?? '');
     _email = TextEditingController(text: profileData['email'] ?? '');
+
+    _originalData = {
+      'name': _name.text,
+      'phone': _phone.text,
+      'businessName': _businessName.text,
+      'gst': _gst.text,
+      'address': _address.text,
+      'email': _email.text,
+    };
   }
+
+  bool get _hasChanges {
+    return _name.text != _originalData['name'] ||
+        _phone.text != _originalData['phone'] ||
+        _businessName.text != _originalData['businessName'] ||
+        _gst.text != _originalData['gst'] ||
+        _address.text != _originalData['address'] ||
+        _email.text != _originalData['email'];
+  }
+
 
   @override
   void dispose() {
@@ -228,7 +247,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     SizedBox(height: height * 0.05),
                     ReusableButton(
                       text: 'Submit',
-                      onPressed: () => _onSave(context),
+                      onPressed: _hasChanges ? () => _onSave(context) : (){},
+                      color: !_hasChanges ? Colors.grey : null,
                       width: width,
                       isLoading: isLoading,
                     ),

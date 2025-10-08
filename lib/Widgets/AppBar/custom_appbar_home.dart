@@ -8,8 +8,21 @@ import 'package:gold_project/Utils/FFontStyles.dart';
 import 'package:gold_project/Utils/ImageAssets.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../Routes/app_routes.dart';
+import '../../Screens/HomeScreens/Catalog/CategorySearchPage.dart';
+
 class CustomAppBarHome extends StatefulWidget implements PreferredSizeWidget {
-  const CustomAppBarHome({super.key});
+  final bool showCenterText;
+  final String? centerText;
+  final Function(String)? onSearchSubmitted; // <-- callback
+
+  const CustomAppBarHome({
+    super.key,
+    this.showCenterText = false,
+    this.centerText,
+    this.onSearchSubmitted,
+
+  });
 
   @override
   Size get preferredSize => const Size.fromHeight(150);
@@ -87,7 +100,6 @@ class _CustomAppBarHomeState extends State<CustomAppBarHome>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Image.asset(ImageAssets.appLogo, height: height * 0.07),
               livePrices.isEmpty
                   ? SizedBox.shrink()
                   : Container(
@@ -127,14 +139,7 @@ class _CustomAppBarHomeState extends State<CustomAppBarHome>
                         icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.black),
                         dropdownColor: AppColors.background,
                         borderRadius: BorderRadius.circular(12),
-                        items: livePrices.isEmpty
-                            ? [
-                          DropdownMenuItem<String>(
-                            value: '',
-                            child: Text('No data', style: FFontStyles.liveText(14).copyWith(color: Colors.grey)),
-                          ),
-                        ]
-                            : livePrices.keys.map((carat) {
+                        items: livePrices.keys.map((carat) {
                           return DropdownMenuItem<String>(
                             value: carat,
                             child: Column(
@@ -145,9 +150,11 @@ class _CustomAppBarHomeState extends State<CustomAppBarHome>
                                   '${carat.toUpperCase()} Carat Price',
                                   style: FFontStyles.liveText(10).copyWith(color: Colors.black),
                                 ),
-                                Text(
-                                  '₹${livePrices[carat]!.toStringAsFixed(2)}/g',
-                                  style: FFontStyles.caratPrice(14).copyWith(color: Colors.black),
+                                FittedBox(
+                                  child: Text(
+                                    '₹${livePrices[carat]!.toStringAsFixed(2)}/g',
+                                    style: FFontStyles.caratPrice(14).copyWith(color: Colors.black),
+                                  ),
                                 ),
                               ],
                             ),
@@ -166,10 +173,55 @@ class _CustomAppBarHomeState extends State<CustomAppBarHome>
                   ],
                 ),
               ),
+
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pushNamed(context, AppRoutes.notificationPage),
+                    child: Image.asset(
+                      ImageAssets.notificationIcon,
+                      width: width * 0.1,
+                      color: AppColors.background,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _circleIcon(Icons.search_rounded, width, context),
+                ],
+              ),
             ],
           ),
         );
       },
     );
   }
+  Widget _circleIcon(IconData icon, double width, BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CategorySearchPage()),
+        );
+
+        if (result != null && result is String) {
+          print('User searched for: $result');
+
+          // <-- Call the callback here so CategoryScreen gets the query
+          if (widget.onSearchSubmitted != null) {
+            widget.onSearchSubmitted!(result);
+          }
+        }
+      },
+      child: Container(
+        width: width * 0.1,
+        height: width * 0.1,
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.background, width: 1.5),
+          shape: BoxShape.circle,
+          color: Colors.transparent,
+        ),
+        child: Icon(icon, color: AppColors.background, size: width * 0.06),
+      ),
+    );
+  }
+
 }

@@ -1,8 +1,8 @@
 class ApiConstants {
-  //static String baseUrl = "http://192.168.0.112:5000";
-  //static String imageUrl = "http://192.168.0.112:5000/";
-  static String baseUrl = "http://192.168.1.39:5000";
-  static String imageUrl = "http://192.168.1.39:5000/";
+  static String baseUrl = "https://saanghi-api.volvrit.org";
+  static String imageUrl = "https://saanghi-api.volvrit.org/";
+  // static String baseUrl = "http://192.168.1.30:5000";
+  // static String imageUrl = "http://192.168.1.30:5000/";
 
   //Auth
   static String login = "/api/user/loginuser";

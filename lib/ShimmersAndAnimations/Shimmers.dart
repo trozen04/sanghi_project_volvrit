@@ -444,35 +444,9 @@ class MyOrdersPageShimmer extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: width * 0.04, vertical: height * 0.03),
+        padding: EdgeInsets.symmetric(horizontal: width * 0.04, vertical: height * 0.01),
         child: Column(
           children: [
-            // Tabs Placeholder
-            Container(
-              height: height * 0.06,
-              decoration: BoxDecoration(
-                color: AppColors.tabBackground,
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: Row(
-                children: List.generate(2, (_) => Expanded(
-                  child: Shimmer.fromColors(
-                    baseColor: Colors.grey.shade200,
-                    highlightColor: Colors.grey.shade100,
-                    child: Container(
-                      margin: EdgeInsets.symmetric(horizontal: width * 0.01, vertical: height * 0.005),
-                      decoration: BoxDecoration(
-                        color: Colors.grey,
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                  ),
-                )),
-              ),
-            ),
-
-            SizedBox(height: height * 0.03),
-
             // Orders List Placeholder
             Expanded(
               child: ListView.separated(

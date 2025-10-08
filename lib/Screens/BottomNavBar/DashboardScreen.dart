@@ -4,6 +4,7 @@ import 'package:gold_project/Screens/HomeScreens/CartPage/CartPage.dart';
 import 'package:gold_project/Screens/HomeScreens/Catalog/CategoryScreen.dart';
 import 'package:gold_project/Screens/HomeScreens/Home/HomeScreen.dart';
 import 'package:gold_project/Screens/Profile/ProfilePage.dart';
+import 'package:gold_project/Widgets/AppBar/custom_appbar_home.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -14,6 +15,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int selectedIndex = 0;
+  String searchQuery = '';
 
   void _onNavItemTapped(int index) {
     setState(() {
@@ -21,26 +23,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
+  void onSearch(String query) {
+    setState(() {
+      searchQuery = query;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Screens with access to current setState
     final List<Widget> screens = [
-      HomeScreen(),
-      CategoryScreen(),
-      CartPage(
-        onBackToHome: () {
-          setState(() {
-            selectedIndex = 0; // navigate to HomeScreen
-          });
-        },
-      ),
+      HomeScreen(searchQuery: searchQuery),
+      CategoryScreen(searchQuery: searchQuery),
+      CartPage(onBackToHome: () => setState(() => selectedIndex = 0)),
       ProfilePage(),
     ];
+
+    // Only show app bar for first 2 screens
+    PreferredSizeWidget? appBar;
+    if (selectedIndex == 0 || selectedIndex == 1) {
+      appBar = CustomAppBarHome(
+        onSearchSubmitted: onSearch,
+      );
+    }
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        body: screens[selectedIndex], // show the selected screen
+        appBar: appBar,
+        body: screens[selectedIndex],
         bottomNavigationBar: CustomNavBar(
           height: 90,
           imageSize: 24,
@@ -52,3 +62,4 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 }
+

@@ -132,7 +132,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
               SizedBox(height: height * 0.03),
               // Orders List
               Expanded(
-                child: isLoading && orders.isEmpty
+                child: isLoading
                     ? MyOrdersPageShimmer()
                     : orders.isEmpty
                     ? Center(child: Text("You don't have any orders yet.",maxLines: 2, style: FFontStyles.noAccountText(14)))
@@ -166,7 +166,10 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
 
                         final images = (order['items'] as List)
                             .expand<String>((item) {
-                          final imgs = item['product']['images'] as List?;
+                          final imgs = (item['product'] != null && item['product']['images'] is List)
+                              ? item['product']['images'] as List
+                              : [];
+
                           if (imgs != null && imgs.isNotEmpty) {
                             return imgs.map((e) => e.toString().replaceAll("\\", "/"));
                           }

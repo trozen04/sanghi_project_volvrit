@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gold_project/Bloc/DashboardBloc/dashboard_bloc.dart';
+import 'package:gold_project/Routes/app_routes.dart';
 import 'package:gold_project/ShimmersAndAnimations/Animations.dart';
 import 'package:gold_project/ShimmersAndAnimations/Shimmers.dart';
 import 'package:gold_project/Utils/ApiConstants.dart';
@@ -16,24 +17,29 @@ import 'package:gold_project/Widgets/AppBar/category_app_bar.dart';
 import 'dart:developer' as developer;
 import 'dart:convert';
 
+import '../../../Widgets/AppBar/custom_appbar_home.dart';
+import 'dart:async';
+
 class CategoryScreen extends StatefulWidget {
-  const CategoryScreen({super.key});
+  final String searchQuery;
+  const CategoryScreen({super.key, this.searchQuery = ''});
 
   @override
   State<CategoryScreen> createState() => _CategoryScreenState();
 }
 
 class _CategoryScreenState extends State<CategoryScreen> {
-  dynamic selectedCategories = {'main': [], 'side': {}}; // Map for category selections
-  dynamic selectedFilters = {'main': [], 'side': {}}; // Map for filter selections
-  bool isLoading = true; // Initial loading state
+  dynamic selectedCategories = {'main': [], 'side': {}};
+  dynamic selectedFilters = {'main': [], 'side': {}};
+  bool isLoading = true;
   bool isCategoriesLoaded = false;
-  List<dynamic> categories = []; // Store API-fetched categories
-  List<Map<String, dynamic>> products = []; // Store API-fetched products
+  List<dynamic> categories = [];
+  List<Map<String, dynamic>> products = [];
   GlobalKey categoryKey = GlobalKey();
   GlobalKey filterKey = GlobalKey();
   String searchQuery = '';
-  // Helper function to parse weight selection into minWeight and maxWeight
+  Timer? _debounceTimer;
+
   Map<String, String?> parseWeight(String? weight) {
     if (weight == null) return {'minWeight': null, 'maxWeight': null};
     if (weight.startsWith('<')) {
@@ -52,11 +58,6 @@ class _CategoryScreenState extends State<CategoryScreen> {
     return {'minWeight': null, 'maxWeight': null};
   }
 
-  // Helper function to compare two selection maps
-  bool areSelectionsEqual(dynamic a, dynamic b) {
-    return jsonEncode(a) == jsonEncode(b);
-  }
-
   void triggerApi({
     String? categoryName,
     String? subCategoryName,
@@ -65,7 +66,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
     String? maxWeight,
     String? search,
   }) {
-    developer.log('params: categoryName=$categoryName, subCategoryName=$subCategoryName, purity=$purity, minWeight=$minWeight, maxWeight=$maxWeight');
+    developer.log(
+        'params: categoryName=$categoryName, subCategoryName=$subCategoryName, purity=$purity, minWeight=$minWeight, maxWeight=$maxWeight, search=$search');
     context.read<DashboardBloc>().add(FetchCategoryListEventHandler(
       token: Prefs.getUserToken() ?? '',
       categoryName: categoryName,
@@ -73,16 +75,38 @@ class _CategoryScreenState extends State<CategoryScreen> {
       purity: purity,
       minWeight: minWeight,
       maxWeight: maxWeight,
-      searchQuery: search
-      // page: 1,
+      searchQuery: search,
     ));
   }
 
   @override
   void initState() {
     super.initState();
-    // Fetch initial data (all categories and products)
     triggerApi();
+
+    // _scrollController.addListener(() {
+    //   if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
+    //       !isLoadingMore &&
+    //       hasMore &&
+    //       !isLoading) {
+    //     // Load next page
+    //     currentPage++;
+    //     fetchMoreProducts();
+    //   }
+    // });
+  }
+
+  @override
+  void didUpdateWidget(CategoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.searchQuery != oldWidget.searchQuery) {
+      triggerApi(
+        categoryName: selectedCategories['main'].isNotEmpty
+            ? selectedCategories['main'][0]
+            : null,
+        search: widget.searchQuery,
+      );
+    }
   }
 
   @override
@@ -92,62 +116,21 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: CategoryAppBar(
-        onSearchSubmitted: (query) {
-          setState(() {
-            searchQuery = query;
-            // currentPage = 1;
-            // hasMore = true;
-            products.clear();
-          });
-
-          final mainCategory =
-          (selectedCategories['main'] as List).isNotEmpty ? selectedCategories['main'][0] : null;
-          final subCategory = mainCategory != null &&
-              selectedCategories['side'] != null &&
-              (selectedCategories['side'][mainCategory] as List?)?.isNotEmpty == true
-              ? selectedCategories['side'][mainCategory][0]
-              : null;
-          final purity = selectedFilters['side']?['Purity']?.isNotEmpty == true
-              ? selectedFilters['side']['Purity'][0]
-              : null;
-          final weight = selectedFilters['side']?['Weight']?.isNotEmpty == true
-              ? selectedFilters['side']['Weight'][0]
-              : null;
-          final weightParams = parseWeight(weight);
-
-          triggerApi(
-            categoryName: mainCategory,
-            subCategoryName: subCategory,
-            purity: purity,
-            minWeight: weightParams['minWeight'],
-            maxWeight: weightParams['maxWeight'],
-            // page: currentPage,
-            search: searchQuery,
-          );
-        },
-      ),
       body: BlocListener<DashboardBloc, DashboardState>(
         listener: (context, state) {
-          // ------------------ PRODUCT LIST STATES ------------------
           if (state is ProductListLoading) {
             setState(() {
               isLoading = true;
             });
-          }
-          else if (state is ProductListLoaded) {
+          } else if (state is ProductListLoaded) {
             final productData = state.responseData as Map<String, dynamic>;
-
             setState(() {
-              // Initial categories load
               if (!isCategoriesLoaded && productData.containsKey('categories')) {
                 categories = productData['categories'] as List? ?? [];
                 isCategoriesLoaded = true;
               }
-
-              // Extract products
               products.clear();
-              final categoryData = productData['categories'] as List? ?? [];
+              var categoryData = productData['categories'] as List? ?? [];
               for (var category in categoryData) {
                 final subcategories = category['subcategories'] as List? ?? [];
                 for (var subcategory in subcategories) {
@@ -155,22 +138,40 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   products.addAll(subcategoryProducts.cast<Map<String, dynamic>>());
                 }
               }
-
               isLoading = false;
             });
-          }
-          else if (state is ProductListError) {
+          } else if (state is ProductListError) {
             setState(() {
               isLoading = false;
             });
             TopSnackbar.show(context, message: state.message, isError: true);
-          }
+          } else if (state is AddToCartSuccess) {
+            final responseData = state.response;
+            developer.log('res: ${responseData}');
 
-          // ------------------ CART UPDATE STATES ------------------
-          else if (state is AddToCartSuccess) {
+            // setState(() {
+            //   for (var product in products) {
+            //     final index = products.indexOf(product);
+            //     final item = cartItems.firstWhere(
+            //           (e) => e['product'] == product['_id'],
+            //       orElse: () => null,
+            //     );
+            //     products[index]['cartQuantity'] = item != null ? item['quantity'] ?? 0 : 0;
+            //   }
+            // });
+            final cartItems = responseData['cart']?['items'] as List<dynamic>? ?? [];
+
+            if (cartItems.isNotEmpty) {
+              final addedProductId = cartItems.last['product']; // get the last added product
+
+              setState(() {
+                products.removeWhere((p) => p['_id'] == addedProductId);
+              });
+            }
+            TopSnackbar.show(context, message: 'Cart updated successfully');
+          } else if (state is AddOrRemoveCartSuccess) {
             final responseData = state.response;
             final cartItems = responseData['cart']['items'] as List<dynamic>? ?? [];
-
             setState(() {
               for (var product in products) {
                 final index = products.indexOf(product);
@@ -178,39 +179,13 @@ class _CategoryScreenState extends State<CategoryScreen> {
                       (e) => e['product'] == product['_id'],
                   orElse: () => null,
                 );
-
-                // Update quantity or set 0 if removed
                 products[index]['cartQuantity'] = item != null ? item['quantity'] ?? 0 : 0;
               }
             });
-
             TopSnackbar.show(context, message: 'Cart updated successfully');
-          }
-          else if (state is AddOrRemoveCartSuccess) {
-            final responseData = state.response;
-            final cartItems = responseData['cart']['items'] as List<dynamic>? ?? [];
-
-            setState(() {
-              for (var product in products) {
-                final index = products.indexOf(product);
-                final item = cartItems.firstWhere(
-                      (e) => e['product'] == product['_id'],
-                  orElse: () => null,
-                );
-
-                // Update quantity or set 0 if removed
-                products[index]['cartQuantity'] = item != null ? item['quantity'] ?? 0 : 0;
-              }
-            });
-
-            TopSnackbar.show(context, message: 'Cart updated successfully');
-          }
-
-          // ------------------ CART ERROR STATES ------------------
-          else if (state is AddToCartError) {
+          } else if (state is AddToCartError) {
             TopSnackbar.show(context, message: state.message, isError: true);
-          }
-          else if (state is AddOrRemoveCartError) {
+          } else if (state is AddOrRemoveCartError) {
             TopSnackbar.show(context, message: state.message, isError: true);
           }
         },
@@ -218,70 +193,62 @@ class _CategoryScreenState extends State<CategoryScreen> {
           padding: EdgeInsets.symmetric(horizontal: width * 0.04, vertical: height * 0.015),
           child: isLoading
               ? const CategoryScreenShimmer()
-              : ParallaxFadeIn(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    // CATEGORY BUTTON
-                    ActionButton(
-                      key: categoryKey,
-                      icon: Icons.grid_view_outlined,
-                      label: 'Category',
-                      onTap: () async {
-                        if (!isCategoriesLoaded) {
-                          developer.log('Categories not loaded yet, skipping dropdown');
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Categories are still loading, please wait'),
-                              backgroundColor: Colors.orange,
-                            ),
-                          );
-                          return;
-                        }
-                        final sideOptionsMap = Map.fromEntries(
-                          categories.map((cat) => MapEntry(
-                            cat['categoryname'] as String,
-                            (cat['subcategories'] as List)
-                                .map((sub) => sub['subcategoryname'] as String)
-                                .toList(),
-                          )),
+              : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  ActionButton(
+                    key: categoryKey,
+                    icon: Icons.grid_view_outlined,
+                    label: 'Category',
+                    onTap: () async {
+                      if (!isCategoriesLoaded) {
+                        developer.log('Categories not loaded yet, skipping dropdown');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Categories are still loading, please wait'),
+                            backgroundColor: Colors.orange,
+                          ),
                         );
-                        developer.log('Category sideOptionsMap: $sideOptionsMap');
-                        final result = await showMultiSelectDropdown(
-                          context: context,
-                          key: categoryKey,
-                          enableSideDropdown: true,
-                          singleSelection: true,
-                          singleSideSelection: true, // Enforce single subcategory selection
-                          title: 'Select Category',
-                          options: categories.map((cat) => cat['categoryname'] as String).toList(),
-                          sideOptionsMap: sideOptionsMap,
-                          initiallySelected: selectedCategories,
-                          onSelected: (selectedList) {
-                            setState(() {
-                              selectedCategories = {
-                                'main': selectedList,
-                                'side': selectedCategories['side'] ?? {},
-                              };
-                            });
-                          },
-                        );
+                        return;
+                      }
 
-                        // Handle dropdown close
-                        if (result != null && !areSelectionsEqual(result, selectedCategories)) {
+                      final sideOptionsMap = Map.fromEntries(
+                        categories.map((cat) => MapEntry(
+                          cat['categoryname'] as String,
+                          (cat['subcategories'] as List)
+                              .map((sub) => sub['subcategoryname'] as String)
+                              .toList(),
+                        )),
+                      );
+                      developer.log('Category sideOptionsMap: $sideOptionsMap');
+
+                      final result = await showMultiSelectDropdown(
+                        context: context,
+                        key: categoryKey,
+                        enableSideDropdown: true,
+                        singleSelection: true,
+                        singleSideSelection: true,
+                        title: 'Select Category',
+                        options: categories.map((cat) => cat['categoryname'] as String).toList(),
+                        sideOptionsMap: sideOptionsMap,
+                        initiallySelected: selectedCategories,
+                        onSelected: (mainSelected, sideSelectedMap) {
+                          developer.log('Category onSelected: main=$mainSelected, side=$sideSelectedMap');
                           setState(() {
-                            selectedCategories = result;
+                            selectedCategories = {
+                              'main': mainSelected,
+                              'side': sideSelectedMap,
+                            };
                           });
-                          // Extract category and subcategory
-                          final mainCategory = (result['main'] as List).isNotEmpty ? result['main'][0] : null;
+
+                          final mainCategory = mainSelected.isNotEmpty ? mainSelected[0] : null;
                           final subCategory = mainCategory != null &&
-                              result['side'] != null &&
-                              (result['side'][mainCategory] as List?)?.isNotEmpty == true
-                              ? result['side'][mainCategory][0]
+                              sideSelectedMap[mainCategory]?.isNotEmpty == true
+                              ? sideSelectedMap[mainCategory]![0]
                               : null;
-                          // Extract filters
+
                           final purity = selectedFilters['side']?['Purity']?.isNotEmpty == true
                               ? selectedFilters['side']['Purity'][0]
                               : null;
@@ -289,6 +256,9 @@ class _CategoryScreenState extends State<CategoryScreen> {
                               ? selectedFilters['side']['Weight'][0]
                               : null;
                           final weightParams = parseWeight(weight);
+
+                          developer.log(
+                              'Triggering API with category=$mainCategory, subCategory=$subCategory, purity=$purity, minWeight=${weightParams['minWeight']}, maxWeight=${weightParams['maxWeight']}');
                           triggerApi(
                             categoryName: mainCategory,
                             subCategoryName: subCategory,
@@ -296,117 +266,136 @@ class _CategoryScreenState extends State<CategoryScreen> {
                             minWeight: weightParams['minWeight'],
                             maxWeight: weightParams['maxWeight'],
                           );
-                        } else {
-                          developer.log('No changes in category selections, skipping API call');
-                        }
-                      },
-                    ),
-                    SizedBox(width: width * 0.05),
-                    // FILTER BUTTON
-                    ActionButton(
-                      key: filterKey,
-                      icon: Icons.filter_list_rounded,
-                      label: 'Filter',
-                      onTap: () async {
-                        final result = await showMultiSelectDropdown(
-                          context: context,
-                          key: filterKey,
-                          enableSideDropdown: true,
-                          singleSideSelection: true,
-                          title: 'Select Filter',
-                          options: const ['Weight', 'Purity'],
-                          sideOptionsMap: const {
-                            'Weight': ['<3g', '3-5g', '5-7g', '7-10g', '10-12g', '12-15g', '15-17g', '17-20g', '>20g'],
-                            'Purity': ['18k', '20k', '22k', '24k'],
-                          },
-                          initiallySelected: selectedFilters,
-                          onSelected: (selectedList) {
-                            setState(() {
-                              selectedFilters = {
-                                'main': selectedList,
-                                'side': selectedFilters['side'] ?? {},
-                              };
-                            });
-                          },
-                        );
-                        if (result != null && !areSelectionsEqual(result, selectedFilters)) {
-                          setState(() => selectedFilters = result);
-                          // Extract filters
-                          final purity = result['side']?['Purity']?.isNotEmpty == true
-                              ? result['side']['Purity'][0]
-                              : null;
-                          final weight = result['side']?['Weight']?.isNotEmpty == true
-                              ? result['side']['Weight'][0]
-                              : null;
-                          final weightParams = parseWeight(weight);
-                          // Extract category
-                          final mainCategory = (selectedCategories['main'] as List).isNotEmpty
-                              ? selectedCategories['main'][0]
-                              : null;
-                          final subCategory = mainCategory != null &&
-                              selectedCategories['side'] != null &&
-                              (selectedCategories['side'][mainCategory] as List?)?.isNotEmpty == true
-                              ? selectedCategories['side'][mainCategory][0]
-                              : null;
-                          triggerApi(
-                            categoryName: mainCategory,
-                            subCategoryName: subCategory,
-                            purity: purity,
-                            minWeight: weightParams['minWeight'],
-                            maxWeight: weightParams['maxWeight'],
-                          );
-                        } else {
-                          developer.log('No changes in filter selections, skipping API call');
-                        }
-                      },
-                    ),
-                  ],
-                ),
-                SizedBox(height: height * 0.01),
-                Text(
-                  selectedCategories['main'].isNotEmpty
-                      ? selectedCategories['main'][0]
-                      : 'All Products',
-                  style: FFontStyles.titleText(18),
-                ),
-                SizedBox(height: height * 0.01),
-                Expanded(
-                  child: products.isEmpty && !isLoading
-                      ? const Center(child: Text('No products found'))
-                      : GridView.builder(
-                    padding: EdgeInsets.zero,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.75,
-                    ),
-                    itemCount: products.length,
-                    itemBuilder: (context, index) {
-                      final product = products[index];
-                      return ProductCard(
-                        id: product['_id'],
-                        title: product['productname']?.toString() ?? 'Product',
-                        imagePath: (product['images'] is List && (product['images'] as List).isNotEmpty)
-                            ? '${ApiConstants.imageUrl}${product['images'][0]}'
-                            : ImageAssets.RingImage,
-                        stockLabel: product['stock'] ?? 0,
-                        onAdd: () {
-                          context.read<DashboardBloc>().add(AddToCartEventHandler(productId: product['_id']));
                         },
-                        onIncrement: () {
-                          context.read<DashboardBloc>().add(AddOrRemoveCartEventHandler(productId: product['_id'], action: 'increase'));
-                        },
-                        onDecrement: () {
-                          context.read<DashboardBloc>().add(AddOrRemoveCartEventHandler(productId: product['_id'], action: 'decrease'));
-                        },
-                        cartQuantity: product['cartQuantity'],
                       );
+
+                      developer.log('Category dropdown result: $result');
+                      if (result != null) {
+                        setState(() {
+                          selectedCategories = result;
+                        });
+                      }
                     },
                   ),
+                  SizedBox(width: width * 0.05),
+                  ActionButton(
+                    key: filterKey,
+                    icon: Icons.filter_list_rounded,
+                    label: 'Filter',
+                    onTap: () async {
+                      final result = await showMultiSelectDropdown(
+                        context: context,
+                        key: filterKey,
+                        enableSideDropdown: true,
+                        singleSideSelection: true,
+                        title: 'Select Filter',
+                        options: const ['Weight', 'Purity'],
+                        sideOptionsMap: const {
+                          'Weight': ['<3g', '3-5g', '5-7g', '7-10g', '10-12g', '12-15g', '15-17g', '17-20g', '>20g'],
+                          'Purity': ['18k', '20k', '22k', '24k'],
+                        },
+                        initiallySelected: selectedFilters,
+                        onSelected: (mainSelected, sideSelectedMap) {
+                          developer.log('Filter onSelected: main=$mainSelected, side=$sideSelectedMap');
+                          setState(() {
+                            selectedFilters = {
+                              'main': mainSelected,
+                              'side': sideSelectedMap,
+                            };
+                          });
+
+                          // Check if there were prior side selections
+                          final hadSideSelections = (selectedFilters['side'] as Map).isNotEmpty;
+
+                          // Only trigger API if there were prior side selections or side selections have changed
+                          if (hadSideSelections || sideSelectedMap.isNotEmpty) {
+                            final purity = sideSelectedMap['Purity']?.isNotEmpty == true
+                                ? sideSelectedMap['Purity']![0]
+                                : null;
+                            final weight = sideSelectedMap['Weight']?.isNotEmpty == true
+                                ? sideSelectedMap['Weight']![0]
+                                : null;
+                            final weightParams = parseWeight(weight);
+
+                            final mainCategory = (selectedCategories['main'] as List).isNotEmpty
+                                ? selectedCategories['main'][0]
+                                : null;
+                            final subCategory = mainCategory != null &&
+                                (selectedCategories['side'] as Map)[mainCategory]?.isNotEmpty == true
+                                ? selectedCategories['side'][mainCategory][0]
+                                : null;
+
+                            developer.log(
+                                'Triggering API with category=$mainCategory, subCategory=$subCategory, purity=$purity, minWeight=${weightParams['minWeight']}, maxWeight=${weightParams['maxWeight']}');
+                            triggerApi(
+                              categoryName: mainCategory,
+                              subCategoryName: subCategory,
+                              purity: purity,
+                              minWeight: weightParams['minWeight'],
+                              maxWeight: weightParams['maxWeight'],
+                            );
+                          } else {
+                            developer.log('Skipping API trigger: No prior side selections and no new side selections');
+                          }
+                        },
+                      );
+                      developer.log('Filter dropdown result: $result');
+                      if (result != null) {
+                        setState(() {
+                          selectedFilters = result;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+              SizedBox(height: height * 0.01),
+              Text(
+                selectedCategories['main'].isNotEmpty
+                    ? selectedCategories['main'][0]
+                    : 'All Products',
+                style: FFontStyles.titleText(18),
+              ),
+              SizedBox(height: height * 0.01),
+              Expanded(
+                child: products.isEmpty && !isLoading
+                    ? const Center(child: Text('No products found'))
+                    : GridView.builder(
+                  padding: EdgeInsets.zero,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 0.75,
+                  ),
+                  itemCount: products.length,
+                  itemBuilder: (context, index) {
+                    final product = products[index];
+                    return ProductCard(
+                      id: product['_id'],
+                      title: product['productname']?.toString() ?? 'Product',
+                      imagePath: (product['images'] is List && (product['images'] as List).isNotEmpty)
+                          ? '${ApiConstants.imageUrl}${product['images'][0]}'
+                          : null,
+                      stockLabel: product['stock'] ?? 0,
+                      onAdd: () {
+                        context.read<DashboardBloc>().add(AddToCartEventHandler(productId: product['_id']));
+                      },
+                      onIncrement: () {
+                        context.read<DashboardBloc>().add(AddOrRemoveCartEventHandler(productId: product['_id'], action: 'increase'));
+                      },
+                      onDecrement: () {
+                        context.read<DashboardBloc>().add(AddOrRemoveCartEventHandler(productId: product['_id'], action: 'decrease'));
+                      },
+                      cartQuantity: product['cartQuantity'],
+                      onViewCart: () {
+                        Navigator.pushNamed(context, AppRoutes.cartPage);
+                      },
+                    );
+                  },
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

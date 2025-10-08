@@ -49,7 +49,10 @@ final class AddToCartError extends DashboardState {
   AddToCartError(this.message);
 }
 
-final class removeFromCartLoading extends DashboardState {}
+final class removeFromCartLoading extends DashboardState {
+  String productId;
+  removeFromCartLoading({required this.productId});
+}
 final class removeFromCartSuccess extends DashboardState {
   final response;
   removeFromCartSuccess(this.response);

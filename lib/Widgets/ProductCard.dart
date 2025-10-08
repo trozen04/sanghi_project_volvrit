@@ -13,6 +13,7 @@ class ProductCard extends StatelessWidget {
   final VoidCallback onAdd;
   final VoidCallback? onIncrement;
   final VoidCallback? onDecrement;
+  final VoidCallback? onViewCart;
 
   const ProductCard({
     super.key,
@@ -24,6 +25,7 @@ class ProductCard extends StatelessWidget {
     required this.onAdd,
     this.onIncrement,
     this.onDecrement,
+    this.onViewCart,
   });
 
   @override
@@ -31,7 +33,6 @@ class ProductCard extends StatelessWidget {
     final size = MediaQuery.of(context).size;
     final width = size.width;
     final height = size.height;
-    String cleanUrl = imagePath!.replaceAll('\\', '/').replaceAll(' ', '%20');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,7 +64,7 @@ class ProductCard extends StatelessWidget {
                       return Container(
                         width: double.infinity,
                         height: 200,
-                        color: Colors.grey.shade300, // shimmer background or static grey
+                        color: Colors.grey.shade300,
                       );
                     },
                     errorBuilder: (context, error, stackTrace) {
@@ -86,102 +87,140 @@ class ProductCard extends StatelessWidget {
             ),
 
             // Stock badge
-            Positioned(
-              top: 18.0,
-              left: 8.0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 3.0),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-                child: Text(
-                  '$stockLabel Stock Left',
-                  style: FFontStyles.link(10.0),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
+            // Positioned(
+            //   top: 18.0,
+            //   left: 8.0,
+            //   child: Container(
+            //     padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 3.0),
+            //     decoration: BoxDecoration(
+            //       color: AppColors.background,
+            //       borderRadius: BorderRadius.circular(8.0),
+            //     ),
+            //     child: Text(
+            //       '$stockLabel Stock Left',
+            //       style: FFontStyles.link(10.0),
+            //       overflow: TextOverflow.ellipsis,
+            //     ),
+            //   ),
+            // ),
 
-            // Add button or quantity counter
             Positioned(
               bottom: -8.0,
               right: -2.0,
-              child: cartQuantity == 0
-                  ? GestureDetector(
+              child: GestureDetector(
                 onTap: onAdd,
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: width * 0.05,
-                    vertical: height * 0.008,
-                  ),
-                  decoration: BoxDecoration(
+                child: AnimatedScale(
+                  scale: cartQuantity > 0 ? 1.0 : 1.0, // you can animate on tap
+                  duration: const Duration(milliseconds: 150),
+                  curve: Curves.easeOut,
+                  child: Material(
                     color: AppColors.background,
-                    borderRadius: BorderRadius.circular(8.0),
-                    border: Border.all(color: AppColors.primary),
-                  ),
-                  child: Text(
-                    'Add',
-                    style: FFontStyles.liveText(12.0),
-                  ),
-                ),
-              )
-                  : Container(
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(8.0),
-                  border: Border.all(color: AppColors.primary),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Decrement button
-                    Material(
-                      color: Colors.transparent, // transparent so the container color shows
+                    borderRadius: BorderRadius.circular(8),
+                    child: InkWell(
+                      onTap: cartQuantity == 0 ? onAdd : onViewCart,
                       borderRadius: BorderRadius.circular(8),
-                      child: InkWell(
-                        onTap: onDecrement,
-                        borderRadius: BorderRadius.circular(8),
-                        splashColor: AppColors.primary.withOpacity(0.3),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          alignment: Alignment.center,
-                          child: Text('-', style: FFontStyles.liveText(18.0)),
+                      splashColor: AppColors.primary.withOpacity(0.3),
+                      highlightColor: AppColors.primary.withOpacity(0.1),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: width * 0.05,
+                          vertical: height * 0.008,
+                        ),
+                        decoration: BoxDecoration(
+                                  color: AppColors.background,
+                                  borderRadius: BorderRadius.circular(8.0),
+                                  border: Border.all(color: AppColors.primary),
+                                ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          cartQuantity == 0 ? 'Add' : 'View Cart',
+                          style: FFontStyles.liveText(12.0),
                         ),
                       ),
                     ),
-
-                    // Quantity display
-                    Container(
-                      width: 40,
-                      height: 40,
-                      alignment: Alignment.center,
-                      child: Text(cartQuantity.toString(), style: FFontStyles.liveText(16.0)),
-                    ),
-
-                    // Increment button
-                    Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      child: InkWell(
-                        onTap: onIncrement,
-                        borderRadius: BorderRadius.circular(8),
-                        splashColor: AppColors.primary.withOpacity(0.3),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          alignment: Alignment.center,
-                          child: Text('+', style: FFontStyles.liveText(18.0)),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
+            )
 
-
-            ),
+            // Positioned(
+            //   bottom: -8.0,
+            //   right: -2.0,
+            //   child: cartQuantity == 0
+            //       ? GestureDetector(
+            //     onTap: onAdd,
+            //     child: Container(
+            //       padding: EdgeInsets.symmetric(
+            //         horizontal: width * 0.05,
+            //         vertical: height * 0.008,
+            //       ),
+            //       decoration: BoxDecoration(
+            //         color: AppColors.background,
+            //         borderRadius: BorderRadius.circular(8.0),
+            //         border: Border.all(color: AppColors.primary),
+            //       ),
+            //       child: Text(
+            //         'Add',
+            //         style: FFontStyles.liveText(12.0),
+            //       ),
+            //     ),
+            //   )
+            //       : Container(
+            //     decoration: BoxDecoration(
+            //       color: AppColors.background,
+            //       borderRadius: BorderRadius.circular(8.0),
+            //       border: Border.all(color: AppColors.primary),
+            //     ),
+            //     child: Row(
+            //       mainAxisSize: MainAxisSize.min,
+            //       children: [
+            //         // Decrement button
+            //         Material(
+            //           color: Colors.transparent, // transparent so the container color shows
+            //           borderRadius: BorderRadius.circular(8),
+            //           child: InkWell(
+            //             onTap: onDecrement,
+            //             borderRadius: BorderRadius.circular(8),
+            //             splashColor: AppColors.primary.withOpacity(0.3),
+            //             child: Container(
+            //               width: 40,
+            //               height: 40,
+            //               alignment: Alignment.center,
+            //               child: Text('-', style: FFontStyles.liveText(18.0)),
+            //             ),
+            //           ),
+            //         ),
+            //
+            //         // Quantity display
+            //         Container(
+            //           width: 40,
+            //           height: 40,
+            //           alignment: Alignment.center,
+            //           child: Text(cartQuantity.toString(), style: FFontStyles.liveText(16.0)),
+            //         ),
+            //
+            //         // Increment button
+            //         Material(
+            //           color: Colors.transparent,
+            //           borderRadius: BorderRadius.circular(8),
+            //           child: InkWell(
+            //             onTap: onIncrement,
+            //             borderRadius: BorderRadius.circular(8),
+            //             splashColor: AppColors.primary.withOpacity(0.3),
+            //             child: Container(
+            //               width: 40,
+            //               height: 40,
+            //               alignment: Alignment.center,
+            //               child: Text('+', style: FFontStyles.liveText(18.0)),
+            //             ),
+            //           ),
+            //         ),
+            //       ],
+            //     ),
+            //   ),
+            //
+            //
+            // ),
           ],
         ),
 
@@ -190,7 +229,7 @@ class ProductCard extends StatelessWidget {
         // Product title
         Text(
           title,
-          style: FFontStyles.titleText(14.0).copyWith(color: Colors.black),
+          style: FFontStyles.customAppBarTitleText(14.0),
           overflow: TextOverflow.ellipsis,
         ),
       ],
