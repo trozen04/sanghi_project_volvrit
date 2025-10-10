@@ -169,7 +169,6 @@ class _CategoryScreenState extends State<CategoryScreen> {
             //     products.removeWhere((p) => p['_id'] == addedProductId);
             //   });
             // }
-            TopSnackbar.show(context, message: 'Cart updated successfully');
           } else if (state is AddOrRemoveCartSuccess) {
             final responseData = state.response;
             final cartItems = responseData['cart']['items'] as List<dynamic>? ?? [];
@@ -183,7 +182,6 @@ class _CategoryScreenState extends State<CategoryScreen> {
                 products[index]['cartQuantity'] = item != null ? item['quantity'] ?? 0 : 0;
               }
             });
-            TopSnackbar.show(context, message: 'Cart updated successfully');
           } else if (state is AddToCartError) {
             TopSnackbar.show(context, message: state.message, isError: true);
           } else if (state is AddOrRemoveCartError) {
@@ -359,7 +357,22 @@ class _CategoryScreenState extends State<CategoryScreen> {
               ),
               SizedBox(height: height * 0.01),
               Expanded(
-                child: products.isEmpty && !isLoading
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    // Trigger API call to refresh products
+                    triggerApi(
+                      categoryName: selectedCategories['main'].isNotEmpty
+                          ? selectedCategories['main'][0]
+                          : null,
+                      search: widget.searchQuery.isNotEmpty ? widget.searchQuery : null,
+                    );
+
+                    // Wait until loading is done
+                    while (isLoading) {
+                      await Future.delayed(const Duration(milliseconds: 100));
+                    }
+                  },
+                  child: products.isEmpty && !isLoading
                     ? const Center(child: Text('No products found'))
                     : GridView.builder(
                   padding: EdgeInsets.zero,
@@ -395,6 +408,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                     );
                   },
                 ),
+                                ),
               ),
             ],
           ),

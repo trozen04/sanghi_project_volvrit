@@ -19,7 +19,6 @@ class DetailsPage extends StatefulWidget {
   final String productId;
   const DetailsPage({super.key, required this.productId});
 
-
   @override
   _DetailsPageState createState() => _DetailsPageState();
 }
@@ -29,6 +28,7 @@ class _DetailsPageState extends State<DetailsPage> {
   int _quantity = 0;
   String? _currentImage; // can be null until product loads
   bool isLoading = false;
+  bool addToCartLoading = false;
   Map<String, dynamic>? product;
 
   @override
@@ -88,7 +88,6 @@ class _DetailsPageState extends State<DetailsPage> {
               if (state is ProductDetailsLoading) {
                 setState(() => isLoading = true);
               } else if (state is ProductDetailsLoaded) {
-                developer.log('ProductDetailsLoaded: ${state.quantity}');
                 setState(() {
                   _quantity = state.quantity;
                   product = state.product;
@@ -108,21 +107,32 @@ class _DetailsPageState extends State<DetailsPage> {
           // Add to cart listener
           BlocListener<DashboardBloc, DashboardState>(
             listener: (context, state) {
-              if (state is AddToCartSuccess) {
+              if(state is AddToCartLoading) {
+                setState(() {
+                  addToCartLoading = true;
+                });
+              } else if (state is AddToCartSuccess) {
                 var responseData = state.response;
                 var cartData = responseData['cart'];
-                developer.log('AddToCartSuccess: $cartData');
+
+                var cartItems = cartData['items'] as List<dynamic>? ?? [];
+
+                var currentItem = cartItems.firstWhere(
+                      (item) => item['product'].toString() == widget.productId,
+                  orElse: () => null,
+                );
 
                 setState(() {
-                  _quantity = (cartData['items'] != null && cartData['items'].isNotEmpty)
-                      ? cartData['items'][0]['quantity'] ?? 0
-                      : 0;
-                  developer.log('_quantity: $_quantity');
-
+                  addToCartLoading = false;
+                  _quantity = currentItem != null ? (currentItem['quantity'] ?? 0) : 0;
                 });
-                TopSnackbar.show(context, message: "Item added to cart");
+                // TopSnackbar.show(context, message: "Item added to cart");
               } else if (state is AddToCartError) {
-                TopSnackbar.show(context, message: state.message);
+                setState(() {
+                  addToCartLoading = false;
+                });
+                TopSnackbar.show(context, message: state.message, isError: true);
+
               }
             },
           ),
@@ -131,16 +141,31 @@ class _DetailsPageState extends State<DetailsPage> {
           BlocListener<DashboardBloc, DashboardState>(
             listener: (context, state) {
               //Updated Cart
-              if(state is AddOrRemoveCartSuccess) {
+              if(state is AddOrRemoveFromCartLoading) {
+                setState(() {
+                  addToCartLoading = true;
+                });
+              } else if (state is AddOrRemoveCartSuccess) {
                 var responseData = state.response;
                 var cartData = responseData['cart'];
-                developer.log('AddOrRemoveCartSuccess responseData: $responseData');
-                setState(() {
-                  _quantity = (cartData['items'] != null && cartData['items'].isNotEmpty)
-                      ? cartData['items'][0]['quantity'] ?? 0
-                      : 0;
-                });
+                var cartItems = cartData['items'] ?? [];
 
+                // Find the cart item that matches this product
+                var currentItem = cartItems.firstWhere(
+                      (item) => item['product'].toString() == widget.productId,
+                  orElse: () => null,
+                );
+
+                setState(() {
+                  addToCartLoading = false;
+                  _quantity = currentItem != null ? (currentItem['quantity'] ?? 0) : 0;
+                });
+              }
+              else if(state is AddOrRemoveCartError){
+                setState(() {
+                  addToCartLoading = false;
+                });
+                TopSnackbar.show(context, message: state.message, isError: true);
               }
             },
           ),
@@ -285,7 +310,7 @@ class _DetailsPageState extends State<DetailsPage> {
               children: [
                 // decrement
                 GestureDetector(
-                  onTap: _decrement,
+                  onTap: addToCartLoading ? null :_decrement,
                   child: Container(
                     width: height * 0.05,
                     height: height * 0.05,
@@ -296,13 +321,14 @@ class _DetailsPageState extends State<DetailsPage> {
                           color: AppColors.primary, width: 0.96),
                     ),
                     child: Center(
-                      child: Text('-', style: TextStyle(fontSize: 25)),
+                      child: Text('-', style: TextStyle(fontSize: 25, color: addToCartLoading ? Colors.grey : Colors.black,)),
                     ),
                   ),
                 ),
                 SizedBox(width: width * 0.03),
                 // quantity text
                 Container(
+                  key: ValueKey(_quantity),
                   height: height * 0.05,
                   padding: EdgeInsets.symmetric(horizontal: width * 0.07),
                   decoration: BoxDecoration(
@@ -319,7 +345,7 @@ class _DetailsPageState extends State<DetailsPage> {
                 SizedBox(width: width * 0.03),
                 // increment
                 GestureDetector(
-                  onTap: _increment,
+                  onTap: addToCartLoading ? null : _increment,
                   child: Container(
                     width: height * 0.05,
                     height: height * 0.05,
@@ -329,7 +355,7 @@ class _DetailsPageState extends State<DetailsPage> {
                       border: Border.all(
                           color: AppColors.primary, width: 0.96),
                     ),
-                    child: Center(child: Icon(Icons.add)),
+                    child: Center(child: Icon(Icons.add, color: addToCartLoading ? Colors.grey : Colors.black,)),
                   ),
                 ),
               ],
@@ -337,14 +363,14 @@ class _DetailsPageState extends State<DetailsPage> {
           ],
         )
             : GestureDetector(
-          onTap: _addToCart,
+          onTap: addToCartLoading ? null : _addToCart,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.shopping_cart_outlined,
                   color: AppColors.background, size: width * 0.06),
               SizedBox(width: width * 0.02),
-              Text('Add to Cart', style: FFontStyles.addtoCard(16)),
+              Text(addToCartLoading ? 'Loading...' : 'Add to Cart', style: FFontStyles.addtoCard(16)),
             ],
           ),
         ),

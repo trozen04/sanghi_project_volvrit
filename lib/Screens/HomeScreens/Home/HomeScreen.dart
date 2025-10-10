@@ -160,7 +160,6 @@ class _HomeScreenState extends State<HomeScreen> {
               }
             });
 
-            TopSnackbar.show(context, message: 'Cart updated successfully');
           }
           else if (state is AddOrRemoveCartSuccess) {
             final responseData = state.response;
@@ -178,7 +177,6 @@ class _HomeScreenState extends State<HomeScreen> {
               }
             });
 
-            TopSnackbar.show(context, message: 'Cart updated successfully');
           }
 
           // ------------------ CART ERROR STATES ------------------
