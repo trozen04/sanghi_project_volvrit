@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
+import 'package:gold_project/Utils/PrefUtils.dart';
 import 'package:http/http.dart' as http;
 import 'package:bloc/bloc.dart';
 import 'package:gold_project/Utils/ApiConstants.dart';
@@ -20,6 +21,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final body = {
           'email': event.email,
           'password': event.password,
+          //'fcmToken': Prefs.getFcmToken(),
         };
 
         developer.log('body:$body');
